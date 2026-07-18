@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Social Links';
 $page_subtitle = 'Connect your social media and contact channels';
 

@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Products';
 $page_subtitle = 'Add, edit and manage your product catalogue';
 $topbar_action_label   = 'Add Product';

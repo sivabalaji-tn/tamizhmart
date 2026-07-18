@@ -5,6 +5,7 @@
  *              shop_id, address, notes, amount }
  * Returns JSON: { success, order_number } or { success:false, error }
  */
+// ── This script is made by Siva Balaji sms ──────────────────────
 session_start();
 require '../config/db.php';
 header('Content-Type: application/json');

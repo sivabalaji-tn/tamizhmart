@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
+// ── This script is made by Siva Balaji sms ──────────────────────
 
 $page_title    = 'Categories';
 $page_subtitle = 'Organise your products into categories';

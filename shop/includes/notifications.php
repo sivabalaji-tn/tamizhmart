@@ -7,7 +7,7 @@
  *   1. composer require phpmailer/phpmailer  (run in project root)
  *   2. Set your Gmail + App Password below
  */
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 // ══════════════════════════════════════════════════════════════
 //  YOUR GMAIL SETTINGS — fill these in
 // ══════════════════════════════════════════════════════════════

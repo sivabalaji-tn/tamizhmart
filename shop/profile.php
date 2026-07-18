@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 if (!$slug) { header("Location: ../index.php"); exit; }
 $stmt = $conn->prepare("SELECT * FROM shops WHERE slug=? AND is_active=1");

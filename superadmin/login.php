@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 if (isset($_SESSION['superadmin_id'])) {
     header("Location: dashboard.php");
     exit;

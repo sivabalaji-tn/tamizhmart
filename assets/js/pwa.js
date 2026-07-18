@@ -1,5 +1,5 @@
 // pwa.js — TamizhMart PWA Installer
-// Include this in every shop page (via shop_foot.php)
+// Include this in every shop page (via shop_foot.php)s
 
 (function () {
     'use strict';

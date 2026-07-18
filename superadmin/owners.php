@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Shop Owners';
 $page_subtitle = 'Manage all registered shop owners';
 

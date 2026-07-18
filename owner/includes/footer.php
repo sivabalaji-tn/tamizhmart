@@ -3,6 +3,7 @@
 </div><!-- /layout -->
 
 <!-- Mobile sidebar overlay -->
+ <!-- This script is made by Siva Balaji sms -->
 <div id="sidebarOverlay" onclick="toggleSidebar()"
     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;backdrop-filter:blur(3px);"></div>
 

@@ -1,7 +1,7 @@
 # Tamizhmart 🛍️
 ### White-Label E-Commerce Platform
 
-
+> End of the Update on this project on 18-07-2026/ Saturdat 10:00 pm.
 > Built by **[@sivabalaji-tn](https://github.com/sivabalaji-tn)** -😄
 > Readme Content by AI
 

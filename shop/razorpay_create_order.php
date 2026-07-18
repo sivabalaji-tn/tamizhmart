@@ -5,6 +5,7 @@
  * POST JSON: { shop_id, amount }
  * Returns:   { razorpay_order_id, amount, currency, key_id } or { error }
  */
+// ── This script is made by Siva Balaji sms ──────────────────────
 session_start();
 require '../config/db.php';
 header('Content-Type: application/json');

@@ -4,7 +4,7 @@ if (!isset($_SESSION['owner_id'])) {
     header("Location: ../login.php");
     exit;
 }
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 // Fetch shop data
 $shop_id = $_SESSION['shop_id'];
 $shop_stmt = $conn->prepare("SELECT * FROM shops WHERE id = ?");

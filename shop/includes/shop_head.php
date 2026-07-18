@@ -1,7 +1,7 @@
 <?php
 // shop/includes/shop_head.php
 // Requires: $shop array, $conn, session started
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 // ── Maintenance mode check ────────────────────────────────────
 $maint_row = $conn->query("SELECT setting_value FROM platform_settings WHERE setting_key='maintenance_mode'")->fetch_row();
 if ($maint_row && $maint_row[0] === '1') {

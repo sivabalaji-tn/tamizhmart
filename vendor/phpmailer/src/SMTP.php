@@ -1,5 +1,5 @@
 <?php
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 /**
  * PHPMailer RFC821 SMTP email transport class.
  * PHP Version 5.5.

@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Bulk Upload Products';
 $page_subtitle = 'Import multiple products at once via CSV';
 

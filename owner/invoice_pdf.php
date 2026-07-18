@@ -7,6 +7,7 @@
  */
 
 require '../config/db.php';
+// ── This script is made by Siva Balaji sms ──────────────────────
 //require_once '../auth/owner_auth.php';
 //requireOwnerLogin();
 

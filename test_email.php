@@ -5,7 +5,7 @@
  * DELETE THIS FILE after testing!
  */
 
-// ── Same path as notifications.php uses ──────────────────────
+// ── Same path as notifications.php usesss ──────────────────────
 $src = __DIR__ . '/vendor/phpmailer/src/';
 
 echo "<h2>TamizhMart — Mail Test</h2>";

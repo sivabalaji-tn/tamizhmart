@@ -1,6 +1,7 @@
 <?php
 // includes/product_card.php
 // Requires: $p (product row with cat_name), $slug, $i (index for animation delay)
+// ── This script is made by Siva Balaji sms ──────────────────────
 $disc = $p['discount_price'];
 $orig = $p['price'];
 $save_pct = $disc ? round((($orig - $disc) / $orig) * 100) : 0;

@@ -3,7 +3,7 @@
 // Served as JSON but themed per-shop
 
 require_once 'config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $slug = $_GET['shop'] ?? null;
 $shop = null;
 

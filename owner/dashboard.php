@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Dashboard';
 $page_subtitle = 'Welcome back, ' . ($_SESSION['owner_name'] ?? 'Owner');
 $topbar_action_label   = 'Add Product';

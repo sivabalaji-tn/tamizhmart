@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 if (!isset($_SESSION['owner_id'])) { http_response_code(403); exit; }
 
 $order_id = (int)($_GET['order_id'] ?? 0);

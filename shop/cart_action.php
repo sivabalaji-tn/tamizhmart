@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
+// ── This script is made by Siva Balaji sms ──────────────────────
 header('Content-Type: application/json');
 
 $slug = $_POST['shop'] ?? $_SESSION['current_shop_slug'] ?? null;

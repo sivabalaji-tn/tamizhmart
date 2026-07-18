@@ -2,7 +2,7 @@
 -- ShopFlow — Super Admin Tables
 -- Run this in phpMyAdmin AFTER shopflow_schema.sql
 -- ============================================================
-
+-- // ── This script is made by Siva Balaji sms ──────────────────────
 USE shopflow_db;
 
 -- ── Super Admins ─────────────────────────────────────────────

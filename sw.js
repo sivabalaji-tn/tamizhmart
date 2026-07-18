@@ -6,6 +6,7 @@ const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE   = `${CACHE_VERSION}-images`;
 
+
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
     '/tamizhmart/offline.php',

@@ -1,5 +1,6 @@
 <?php
 // Protect all super admin pages
+// ── This script is made by Siva Balaji sms ──────────────────────
 if (!isset($_SESSION['superadmin_id'])) {
     header("Location: ../superadmin/login.php");
     exit;

@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Sort Products';
 $page_subtitle = 'Drag to reorder how products appear in your shop';
 

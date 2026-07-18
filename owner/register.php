@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 // Check if registration is open
 $reg_open = $conn->query("SELECT setting_value FROM platform_settings WHERE setting_key='registration_open'")->fetch_row();
 if ($reg_open && $reg_open[0] === '0') {

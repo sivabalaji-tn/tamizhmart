@@ -4,6 +4,7 @@
  * URL: receipt.php?shop=sm-store&order_id=42
  * Only accessible by the customer who placed the order
  */
+// ── This script is made by Siva Balaji sms ──────────────────────
 session_start();
 require '../config/db.php';
 

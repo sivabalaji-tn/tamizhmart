@@ -6,7 +6,7 @@ $page_title    = 'Analytics';
 $page_subtitle = 'Deep insights into your store performance';
 
 require 'includes/sidebar.php';
-//This script is made by Siva Balaji sms
+// ── This script is made by Siva Balaji sms ──────────────────────
 
 $shop_id = $_SESSION['shop_id'];
 
@@ -131,7 +131,7 @@ $new_customers = $conn->query("
     </div>
 </div>
 
-<!-- ── Revenue & Orders Chart ── -->//This script is made by Siva Balaji sm
+<!-- ── Revenue & Orders Chart ── -->
 <div class="card-glass animate-in d2" style="margin-top:16px;">
     <div class="section-head" style="margin-bottom:20px;">
         <div>

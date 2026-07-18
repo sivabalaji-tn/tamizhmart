@@ -1,6 +1,6 @@
 <?php
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $hash = password_hash('admin123', PASSWORD_DEFAULT);
 
 $conn->query("UPDATE super_admins SET password='$hash' WHERE email='admin@tamizhmart.com'");

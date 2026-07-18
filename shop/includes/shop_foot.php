@@ -1,4 +1,4 @@
-<?php // shop/includes/shop_foot.php ?>
+<?php // shop/includes/shop_foot.php // ── This script is made by Siva Balaji sms ────────────────────── ?>
 </main>
 
 <!-- Footer -->

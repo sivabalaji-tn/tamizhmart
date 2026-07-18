@@ -7,7 +7,8 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Get shop by slug (URL param or session)
+
+// Get shop by slugs (URL param or session)
 $shop_slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 $shop = null;
 

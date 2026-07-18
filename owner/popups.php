@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Offers & Popups';
 $page_subtitle = 'Create promotional popups shown to customers';
 $topbar_action_label   = 'New Popup';

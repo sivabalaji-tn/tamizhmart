@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 if (!isset($_SESSION['owner_id'])) { header("Location: login.php"); exit; }
 
 $shop_id   = $_SESSION['shop_id'];

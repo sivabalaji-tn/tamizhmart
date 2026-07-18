@@ -1,4 +1,5 @@
 <?php
+// ── This script is made by Siva Balaji sms ──────────────────────
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');

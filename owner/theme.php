@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Theme & Colors';
 $page_subtitle = 'Customise your shop\'s look and feel in real time';
 
