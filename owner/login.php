@@ -1,13 +1,20 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 if (isset($_SESSION['owner_id'])) {
     header("Location: dashboard.php");
     exit;
 }
 
 $error = '';
+// Subscription error messages
+if (($_GET['err'] ?? '') === 'suspended') {
+    $error = 'Your shop has been suspended. Please contact TamizhMart admin to reactivate.';
+}
+if (($_GET['err'] ?? '') === 'expired') {
+    $error = 'Your subscription has expired and grace period has ended. Contact admin to renew.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email']);
@@ -31,6 +38,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $setup = $conn->query("SELECT setting_value FROM shop_settings WHERE shop_id=$sid AND setting_key='setup_complete'")->fetch_assoc();
+
+        // ── Check subscription status ─────────────────────────
+        $sub = $conn->query("SELECT ss.*, p.name AS plan_name FROM shop_subscriptions ss JOIN plans p ON ss.plan_id=p.id WHERE ss.shop_id=$sid ORDER BY ss.id DESC LIMIT 1")->fetch_assoc();
+        if ($sub) {
+            $now = time();
+            $expires   = strtotime($sub['expires_at']);
+            $grace_end = strtotime($sub['grace_until'] ?? $sub['expires_at']);
+
+            if ($sub['status'] === 'suspended') {
+                // Hard suspended by admin
+                session_destroy();
+                header("Location: login.php?err=suspended");
+                exit;
+            } elseif ($sub['status'] === 'active' || $sub['status'] === 'trial') {
+                if ($now > $expires) {
+                    // Expired — move to grace
+                    $conn->query("UPDATE shop_subscriptions SET status='grace' WHERE id={$sub['id']}");
+                    $_SESSION['sub_warning'] = 'Your subscription expired. You have until ' . date('d M Y', $grace_end) . ' to renew.';
+                }
+            } elseif ($sub['status'] === 'grace') {
+                if ($now > $grace_end) {
+                    // Grace ended — suspend
+                    $conn->query("UPDATE shop_subscriptions SET status='suspended' WHERE id={$sub['id']}");
+                    $conn->query("UPDATE shops SET is_suspended=1 WHERE id=$sid");
+                    session_destroy();
+                    header("Location: login.php?err=expired");
+                    exit;
+                } else {
+                    $days_left = ceil(($grace_end - $now) / 86400);
+                    $_SESSION['sub_warning'] = "⚠️ Grace period: $days_left day(s) left. Contact admin to renew.";
+                }
+            }
+        }
+
         if (!$setup || $setup['setting_value'] !== '1') {
             header("Location: setup.php");
         } else {

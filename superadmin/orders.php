@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 $page_title    = 'All Orders';
 $page_subtitle = 'Platform-wide order feed across all shops';
 
@@ -34,8 +34,8 @@ $orders = $conn->query("
 
 $all_shops = $conn->query("SELECT id, name FROM shops ORDER BY name ASC");
 
-$status_colors = ['pending'=>'warning','processing'=>'info','out_for_delivery'=>'purple','delivered'=>'success','cancelled'=>'danger'];
-$status_labels = ['pending'=>'Pending','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
+$status_colors = ['pending'=>'warning','confirmed'=>'info','processing'=>'info','out_for_delivery'=>'purple','delivered'=>'success','cancelled'=>'danger'];
+$status_labels = ['pending'=>'Pending','confirmed'=>'Confirmed','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
 
 // Total filtered revenue
 $rev_query = $conn->query("SELECT COALESCE(SUM(o.total_amount),0) FROM orders o JOIN users u ON o.user_id=u.id WHERE $where AND o.status!='cancelled'");

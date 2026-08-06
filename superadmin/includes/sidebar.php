@@ -1,6 +1,5 @@
 <?php
 // Protect all super admin pages
-// ── This script is made by Siva Balaji sms ──────────────────────
 if (!isset($_SESSION['superadmin_id'])) {
     header("Location: ../superadmin/login.php");
     exit;
@@ -362,6 +361,19 @@ $pending_orders = $conn->query("SELECT COUNT(*) FROM orders WHERE status='pendin
             <i class="bi bi-bag"></i> All Orders
             <?php if ($pending_orders > 0): ?>
             <span class="nav-badge"><?= $pending_orders ?></span>
+            <?php endif; ?>
+        </a>
+
+        <div class="nav-section-label">Monetization</div>
+        <a href="plans.php" class="nav-item <?= $current_page==='plans.php'?'active':'' ?>">
+            <i class="bi bi-layers"></i> Plans
+        </a>
+        <a href="subscriptions.php" class="nav-item <?= $current_page==='subscriptions.php'?'active':'' ?>">
+            <i class="bi bi-credit-card-2-front"></i> Subscriptions
+            <?php
+            $grace_count = $conn->query("SELECT COUNT(*) FROM shop_subscriptions WHERE status='grace'")->fetch_row()[0] ?? 0;
+            if ($grace_count > 0): ?>
+            <span class="nav-badge" style="background:#ea580c;"><?= $grace_count ?></span>
             <?php endif; ?>
         </a>
 

@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 $page_title    = 'Store Settings';
 $page_subtitle = 'Manage your shop information and branding';
 
@@ -80,6 +80,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->query("UPDATE shops SET banner=NULL WHERE id=$shop_id");
         $shop['banner'] = null;
         $success = "Banner removed.";
+
+    } elseif ($action === 'update_tax') {
+        $tax_enabled = isset($_POST['tax_enabled']) ? '1' : '0';
+        $cgst_rate   = min(28, max(0, floatval($_POST['cgst_rate'] ?? 9)));
+        $sgst_rate   = min(28, max(0, floatval($_POST['sgst_rate'] ?? 9)));
+        foreach ([
+            'tax_enabled' => $tax_enabled,
+            'cgst_rate'   => $cgst_rate,
+            'sgst_rate'   => $sgst_rate,
+        ] as $k => $v) {
+            $v_esc = $conn->real_escape_string($v);
+            $conn->query("INSERT INTO shop_settings (shop_id, setting_key, setting_value)
+                          VALUES ($shop_id, '$k', '$v_esc')
+                          ON DUPLICATE KEY UPDATE setting_value='$v_esc'");
+        }
+        $success = "Tax settings saved.";
 
     } elseif ($action === 'update_razorpay') {
         $rz_enabled = isset($_POST['razorpay_enabled']) ? '1' : '0';
@@ -260,6 +276,74 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     TAX SETTINGS CARD
+     ═══════════════════════════════════════════════════ -->
+<div style="margin-top:24px;" class="animate-in d2">
+    <div class="card-glass" style="border-color:rgba(202,138,4,0.2);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(234,179,8,0.1);display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-percent" style="color:#ca8a04;font-size:18px;"></i>
+            </div>
+            <div>
+                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;">Tax Settings (GST)</div>
+                <div style="font-size:12.5px;color:var(--muted);">Set CGST &amp; SGST for invoices. Set 0% if not GST registered.</div>
+            </div>
+        </div>
+        <hr style="border-color:var(--card-border);margin:16px 0;">
+        <?php
+        $tax_enabled = $settings['tax_enabled'] ?? '0';
+        $cgst_rate   = $settings['cgst_rate']   ?? '9';
+        $sgst_rate   = $settings['sgst_rate']   ?? '9';
+        ?>
+        <?php if ($tax_enabled === '1'): ?>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);color:#92400e;padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;margin-bottom:16px;">
+            <span style="width:7px;height:7px;background:#ca8a04;border-radius:50%;display:inline-block;"></span>
+            GST active &mdash; CGST <?= $cgst_rate ?>% + SGST <?= $sgst_rate ?>% = <?= floatval($cgst_rate)+floatval($sgst_rate) ?>%
+        </div>
+        <?php else: ?>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.2);color:var(--muted);padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;margin-bottom:16px;">
+            <span style="width:7px;height:7px;background:var(--muted);border-radius:50%;display:inline-block;"></span>
+            No tax &mdash; invoices will show 0% GST
+        </div>
+        <?php endif; ?>
+        <form method="POST">
+            <input type="hidden" name="action" value="update_tax">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
+                    <input type="checkbox" name="tax_enabled" value="1" id="taxToggle"
+                        <?= $tax_enabled === '1' ? 'checked' : '' ?>
+                        onchange="document.getElementById('taxFields').style.display=this.checked?'grid':'none'"
+                        style="width:18px;height:18px;accent-color:#ca8a04;flex-shrink:0;">
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Enable GST on invoices</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:1px;">Disable if your shop is not GST registered (small traders, composition scheme, etc.)</div>
+                    </div>
+                </label>
+                <div id="taxFields" style="display:<?= $tax_enabled === '1' ? 'grid' : 'none' ?>;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div>
+                        <div style="font-size:12.5px;font-weight:500;color:var(--muted);margin-bottom:7px;">CGST Rate (%)</div>
+                        <input type="number" name="cgst_rate" class="input-custom" min="0" max="28" step="0.5" value="<?= htmlspecialchars($cgst_rate) ?>" placeholder="9">
+                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Common: 0%, 2.5%, 6%, 9%, 14%</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12.5px;font-weight:500;color:var(--muted);margin-bottom:7px;">SGST Rate (%)</div>
+                        <input type="number" name="sgst_rate" class="input-custom" min="0" max="28" step="0.5" value="<?= htmlspecialchars($sgst_rate) ?>" placeholder="9">
+                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Usually same as CGST rate</div>
+                    </div>
+                </div>
+                <div style="background:rgba(234,179,8,0.07);border:1px solid rgba(234,179,8,0.2);border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;">
+                    <i class="bi bi-info-circle" style="color:#ca8a04;margin-right:6px;"></i>
+                    If annual turnover &lt; ₹40 lakhs (goods) or ₹20 lakhs (services), GST registration is not mandatory. Keep tax at 0%.
+                </div>
+                <button type="submit" class="btn-primary-custom" style="justify-content:center;padding:12px;">
+                    <i class="bi bi-save"></i> Save Tax Settings
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

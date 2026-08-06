@@ -6,7 +6,6 @@
  */
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
 
 // ── Shop ─────────────────────────────────────────────────────
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? '';

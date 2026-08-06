@@ -7,7 +7,7 @@
  *   1. composer require phpmailer/phpmailer  (run in project root)
  *   2. Set your Gmail + App Password below
  */
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 // ══════════════════════════════════════════════════════════════
 //  YOUR GMAIL SETTINGS — fill these in
 // ══════════════════════════════════════════════════════════════
@@ -152,5 +152,261 @@ function sendOrderNotifications($conn, $order_id, $shop, $user, $items, $total, 
           . "Total: ₹" . number_format($total, 2) . "\n"
           . "Payment: $payment"
         );
+    }
+}
+
+// ============================================================
+//  REGISTRATION EMAILS
+// ============================================================
+
+/**
+ * Email 1 — Sent to the OWNER after registering their shop
+ * Welcome email with shop link, login link, getting started tips
+ */
+function sendOwnerRegistrationEmail($to_email, $owner_name, $shop_name, $shop_slug, $shop_url) {
+    $src = dirname(__DIR__, 2) . '/vendor/phpmailer/src/';
+    if (!file_exists($src . 'PHPMailer.php')) return false;
+    require_once $src . 'Exception.php';
+    require_once $src . 'PHPMailer.php';
+    require_once $src . 'SMTP.php';
+
+    $login_url    = 'http://tamizhmart.optikl.ink/owner/login.php';
+    $dashboard_url= 'http://tamizhmart.optikl.ink/owner/dashboard.php';
+
+    $body = "
+    <!DOCTYPE html>
+    <html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+    <style>
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:Arial,Helvetica,sans-serif; background:#f5f0ea; color:#1a1208; }
+        .wrap { max-width:580px; margin:32px auto; background:#fff; border-radius:20px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.1); }
+        .header { background:#1a1208; padding:36px 40px; text-align:center; }
+        .logo { font-size:24px; font-weight:900; color:#c8a97e; letter-spacing:-0.5px; }
+        .logo span { color:#fff; }
+        .header-sub { font-size:13px; color:rgba(255,255,255,0.4); margin-top:4px; }
+        .hero { background:linear-gradient(135deg,#1a1208,#2d1f0a); padding:40px; text-align:center; }
+        .emoji { font-size:52px; display:block; margin-bottom:16px; }
+        .hero h1 { font-size:24px; font-weight:900; color:#fff; letter-spacing:-0.5px; margin-bottom:8px; }
+        .hero p { font-size:14px; color:rgba(255,255,255,0.5); line-height:1.6; }
+        .body { padding:36px 40px; }
+        .hi { font-size:16px; font-weight:700; margin-bottom:16px; color:#1a1208; }
+        .intro { font-size:14px; color:#555; line-height:1.7; margin-bottom:28px; }
+        /* Shop card */
+        .shop-card { background:#faf7f2; border:1px solid #e8ddd0; border-radius:14px; padding:24px; margin-bottom:28px; }
+        .shop-card-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#c8a97e; margin-bottom:14px; }
+        .shop-row { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid #f0e8df; }
+        .shop-row:last-child { border-bottom:none; }
+        .shop-row-label { font-size:12px; font-weight:700; color:#888; min-width:100px; padding-top:1px; }
+        .shop-row-val { font-size:13.5px; color:#1a1208; font-weight:500; word-break:break-all; }
+        .shop-link { color:#c8a97e; text-decoration:none; font-weight:700; }
+        /* Steps */
+        .steps-title { font-size:13px; font-weight:700; color:#1a1208; margin-bottom:16px; }
+        .step { display:flex; align-items:flex-start; gap:14px; margin-bottom:14px; }
+        .step-num { width:28px; height:28px; border-radius:50%; background:#1a1208; color:#c8a97e; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+        .step-text { font-size:13.5px; color:#444; line-height:1.6; }
+        .step-text strong { color:#1a1208; display:block; margin-bottom:2px; }
+        /* CTA */
+        .cta-wrap { text-align:center; padding:28px 0 0; }
+        .cta-btn { display:inline-block; background:#c8a97e; color:#1a1208; text-decoration:none; padding:14px 36px; border-radius:99px; font-size:14px; font-weight:800; letter-spacing:0.3px; }
+        .cta-btn:hover { background:#b8996e; }
+        .cta-sub { font-size:12px; color:#999; margin-top:10px; }
+        /* Footer */
+        .footer { background:#faf7f2; padding:24px 40px; text-align:center; border-top:1px solid #ede8e0; }
+        .footer p { font-size:12px; color:#aaa; line-height:1.7; }
+        .footer strong { color:#888; }
+    </style>
+    </head>
+    <body>
+    <div class='wrap'>
+        <div class='header'>
+            <div class='logo'>Tamizhmart</div>
+            <div class='header-sub'>Tamil Nadu's Local Shopping Platform</div>
+        </div>
+        <div class='hero'>
+            <span class='emoji'>🎉</span>
+            <h1>Your Shop is Live!</h1>
+            <p>Welcome to TamizhMart — your online store is ready to go.</p>
+        </div>
+        <div class='body'>
+            <p class='hi'>Hi " . htmlspecialchars($owner_name) . ",</p>
+            <p class='intro'>
+                Congratulations! Your shop <strong>" . htmlspecialchars($shop_name) . "</strong> has been
+                successfully created on TamizhMart. You can now log in to your dashboard,
+                add products, and start accepting orders from customers across Tamil Nadu.
+            </p>
+
+            <!-- Shop Details Card -->
+            <div class='shop-card'>
+                <div class='shop-card-title'>📋 Your Shop Details</div>
+                <div class='shop-row'>
+                    <div class='shop-row-label'>Shop Name</div>
+                    <div class='shop-row-val'>" . htmlspecialchars($shop_name) . "</div>
+                </div>
+                <div class='shop-row'>
+                    <div class='shop-row-label'>Shop URL</div>
+                    <div class='shop-row-val'><a href='$shop_url' class='shop-link'>$shop_url</a></div>
+                </div>
+                <div class='shop-row'>
+                    <div class='shop-row-label'>Shop Slug</div>
+                    <div class='shop-row-val'>$shop_slug</div>
+                </div>
+                <div class='shop-row'>
+                    <div class='shop-row-label'>Owner Email</div>
+                    <div class='shop-row-val'>" . htmlspecialchars($to_email) . "</div>
+                </div>
+                <div class='shop-row'>
+                    <div class='shop-row-label'>Dashboard</div>
+                    <div class='shop-row-val'><a href='$dashboard_url' class='shop-link'>$dashboard_url</a></div>
+                </div>
+                <div class='shop-row'>
+                    <div class='shop-row-label'>Platform</div>
+                    <div class='shop-row-val'>TamizhMart — Tamil Nadu</div>
+                </div>
+            </div>
+
+            <!-- Getting started steps -->
+            <p class='steps-title'>🚀 Get Started in 3 Steps</p>
+            <div class='step'>
+                <div class='step-num'>1</div>
+                <div class='step-text'>
+                    <strong>Complete Setup Wizard</strong>
+                    Log in and finish the setup — add your logo, shop address, and contact details.
+                </div>
+            </div>
+            <div class='step'>
+                <div class='step-num'>2</div>
+                <div class='step-text'>
+                    <strong>Add Your Products</strong>
+                    Go to Products → Add Product. Upload images, set prices, and manage stock.
+                </div>
+            </div>
+            <div class='step'>
+                <div class='step-num'>3</div>
+                <div class='step-text'>
+                    <strong>Share Your Shop Link</strong>
+                    Share <a href='$shop_url' style='color:#c8a97e;font-weight:600;'>your shop URL</a>
+                    on WhatsApp, Instagram, and with customers to start receiving orders.
+                </div>
+            </div>
+
+            <div class='cta-wrap'>
+                <a href='$login_url' class='cta-btn'>Login to Dashboard &rarr;</a>
+                <p class='cta-sub'>Use your registered email and password to sign in.</p>
+            </div>
+        </div>
+        <div class='footer'>
+            <p>
+                This email was sent because you registered a shop on TamizhMart.<br>
+                <strong>Made with ♥ by SM Tech</strong> · Tamil Nadu, India
+            </p>
+        </div>
+    </div>
+    </body></html>";
+
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = MAIL_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = MAIL_USERNAME;
+        $mail->Password   = MAIL_PASSWORD;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = MAIL_PORT;
+        $mail->CharSet    = 'UTF-8';
+        $mail->setFrom(MAIL_FROM, 'TamizhMart');
+        $mail->addAddress($to_email, $owner_name);
+        $mail->isHTML(true);
+        $mail->Subject = "🎉 Your shop \"$shop_name\" is live on TamizhMart!";
+        $mail->Body    = $body;
+        $mail->AltBody = "Hi $owner_name, your shop $shop_name is live! Visit: $shop_url | Login: $login_url";
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Owner registration email failed: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Email 2 — Sent to SUPER ADMIN when a new shop registers
+ * New shop notification with owner details
+ */
+function sendAdminNewShopEmail($owner_name, $owner_email, $shop_name, $shop_slug, $shop_url) {
+    $src = dirname(__DIR__, 2) . '/vendor/phpmailer/src/';
+    if (!file_exists($src . 'PHPMailer.php')) return false;
+    require_once $src . 'Exception.php';
+    require_once $src . 'PHPMailer.php';
+    require_once $src . 'SMTP.php';
+
+    $admin_url = 'http://tamizhmart.optikl.ink/superadmin/shops.php';
+
+    $body = "
+    <!DOCTYPE html>
+    <html><head><meta charset='UTF-8'>
+    <style>
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:Arial,sans-serif; background:#f5f0ea; color:#1a1208; }
+        .wrap { max-width:520px; margin:32px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.1); }
+        .header { background:#1a1208; padding:24px 32px; display:flex; align-items:center; justify-content:space-between; }
+        .logo { font-size:18px; font-weight:900; color:#c8a97e; }
+        .badge { background:rgba(200,169,126,0.15); color:#c8a97e; border:1px solid rgba(200,169,126,0.3); padding:4px 12px; border-radius:99px; font-size:11px; font-weight:700; }
+        .body { padding:28px 32px; }
+        .alert-icon { font-size:36px; margin-bottom:12px; }
+        h2 { font-size:20px; font-weight:800; margin-bottom:8px; }
+        .sub { font-size:13.5px; color:#666; margin-bottom:24px; line-height:1.6; }
+        .info-table { width:100%; border-collapse:collapse; margin-bottom:24px; }
+        .info-table td { padding:10px 14px; font-size:13.5px; border-bottom:1px solid #f0e8df; }
+        .info-table td:first-child { font-weight:700; color:#888; width:120px; }
+        .info-table tr:last-child td { border-bottom:none; }
+        .info-table td a { color:#c8a97e; }
+        .cta { display:inline-block; background:#1a1208; color:#c8a97e; text-decoration:none; padding:12px 28px; border-radius:99px; font-size:13.5px; font-weight:700; }
+        .footer { background:#faf7f2; padding:16px 32px; text-align:center; font-size:12px; color:#aaa; border-top:1px solid #ede8e0; }
+    </style>
+    </head>
+    <body>
+    <div class='wrap'>
+        <div class='header'>
+            <div class='logo'>TamizhMart</div>
+            <div class='badge'>Super Admin Alert</div>
+        </div>
+        <div class='body'>
+            <div class='alert-icon'>🏪</div>
+            <h2>New Shop Registered</h2>
+            <p class='sub'>A new shop owner has registered on TamizhMart. Here are the details:</p>
+            <table class='info-table'>
+                <tr><td>Owner Name</td><td>" . htmlspecialchars($owner_name) . "</td></tr>
+                <tr><td>Owner Email</td><td>" . htmlspecialchars($owner_email) . "</td></tr>
+                <tr><td>Shop Name</td><td><strong>" . htmlspecialchars($shop_name) . "</strong></td></tr>
+                <tr><td>Shop Slug</td><td>$shop_slug</td></tr>
+                <tr><td>Shop URL</td><td><a href='$shop_url'>$shop_url</a></td></tr>
+                <tr><td>Registered At</td><td>" . date('d M Y, h:i A') . "</td></tr>
+            </table>
+            <a href='$admin_url' class='cta'>View in Super Admin &rarr;</a>
+        </div>
+        <div class='footer'>TamizhMart Platform · Made with ♥ by SM Tech</div>
+    </div>
+    </body></html>";
+
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = MAIL_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = MAIL_USERNAME;
+        $mail->Password   = MAIL_PASSWORD;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = MAIL_PORT;
+        $mail->CharSet    = 'UTF-8';
+        $mail->setFrom(MAIL_FROM, 'TamizhMart System');
+        $mail->addAddress(MAIL_USERNAME); // sends to admin (your Gmail)
+        $mail->isHTML(true);
+        $mail->Subject = "🏪 New Shop Registered: $shop_name";
+        $mail->Body    = $body;
+        $mail->AltBody = "New shop registered: $shop_name by $owner_name ($owner_email). URL: $shop_url";
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Admin notification email failed: " . $e->getMessage());
+        return false;
     }
 }

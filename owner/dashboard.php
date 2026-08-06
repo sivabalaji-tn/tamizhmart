@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 $page_title    = 'Dashboard';
 $page_subtitle = 'Welcome back, ' . ($_SESSION['owner_name'] ?? 'Owner');
 $topbar_action_label   = 'Add Product';
@@ -9,9 +9,17 @@ $topbar_action_icon    = 'plus-lg';
 $topbar_action_onclick = "window.location='products.php?action=add'";
 
 require 'includes/sidebar.php';
-//This script is made by Siva Balaji sm
 
 $shop_id = $_SESSION['shop_id'];
+
+// ── Subscription status for banner ────────────────────────────
+$sub_info = $conn->query("
+    SELECT ss.*, p.name AS plan_name, p.slug AS plan_slug, p.price AS plan_price
+    FROM shop_subscriptions ss
+    JOIN plans p ON ss.plan_id = p.id
+    WHERE ss.shop_id = $shop_id
+    ORDER BY ss.id DESC LIMIT 1
+")->fetch_assoc();
 
 // ── Stats ──────────────────────────────────────────────────
 // Total revenue
@@ -73,6 +81,79 @@ while ($r = $status_dist->fetch_assoc()) $status_data[$r['status']] = (int)$r['c
 ?>
 
 <!-- ── Stat Cards ── -->
+<?php
+// ── Subscription warning banner ───────────────────────────────
+if ($sub_info):
+    $now        = time();
+    $expires    = strtotime($sub_info['expires_at']);
+    $grace_end  = strtotime($sub_info['grace_until'] ?? $sub_info['expires_at']);
+    $days_left  = ceil(($expires - $now) / 86400);
+    $show_warn  = false;
+    $warn_msg   = '';
+    $warn_type  = 'orange';
+
+    if ($sub_info['status'] === 'trial') {
+        if ($days_left <= 7) {
+            $show_warn = true;
+            $warn_type = $days_left <= 2 ? 'red' : 'orange';
+            $warn_msg  = "⏳ Your free trial ends in <strong>$days_left day(s)</strong>. Contact admin to upgrade to Elite or Premium.";
+        }
+    } elseif ($sub_info['status'] === 'active') {
+        if ($days_left <= 7 && $days_left >= 0) {
+            $show_warn = true;
+            $warn_msg  = "🔔 Your <strong>{$sub_info['plan_name']}</strong> plan expires in <strong>$days_left day(s)</strong>. Contact admin to renew.";
+        }
+    } elseif ($sub_info['status'] === 'grace') {
+        $grace_left = ceil(($grace_end - $now) / 86400);
+        $show_warn  = true;
+        $warn_type  = 'red';
+        $warn_msg   = "⚠️ <strong>Grace Period:</strong> Your subscription expired. $grace_left day(s) left before shop suspension. Contact admin immediately.";
+    }
+
+    if ($show_warn || !empty($_SESSION['sub_warning'])):
+        $msg = $warn_msg ?: $_SESSION['sub_warning'];
+        unset($_SESSION['sub_warning']);
+?>
+<div style="background:<?= $warn_type==='red' ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)' ?>;
+     border:1px solid <?= $warn_type==='red' ? 'rgba(239,68,68,0.3)' : 'rgba(251,191,36,0.3)' ?>;
+     border-radius:var(--radius-sm);
+     padding:14px 18px;
+     margin-bottom:20px;
+     display:flex;
+     align-items:center;
+     justify-content:space-between;
+     gap:12px;
+     flex-wrap:wrap;"
+     class="animate-in">
+    <div style="font-size:13.5px;color:<?= $warn_type==='red' ? '#dc2626' : '#92400e' ?>;">
+        <?= $msg ?>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span style="font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:99px;
+            background:<?= $warn_type==='red' ? 'rgba(239,68,68,0.15)' : 'rgba(251,191,36,0.15)' ?>;
+            color:<?= $warn_type==='red' ? '#dc2626' : '#92400e' ?>;">
+            <?= strtoupper($sub_info['plan_name']) ?> PLAN
+        </span>
+    </div>
+</div>
+<?php endif; endif; ?>
+
+<!-- Subscription info bar -->
+<?php if ($sub_info): ?>
+<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px;
+    background:var(--card-bg);border:1px solid var(--card-border);
+    border-radius:var(--radius-sm);padding:12px 18px;font-size:13px;" class="animate-in">
+    <span style="color:var(--muted);">Current Plan:</span>
+    <span style="font-weight:700;color:var(--accent);"><?= htmlspecialchars($sub_info['plan_name']) ?></span>
+    <span style="color:var(--muted);">|</span>
+    <span style="color:var(--muted);">Status:</span>
+    <span style="font-weight:600;text-transform:capitalize;"><?= $sub_info['status'] ?></span>
+    <span style="color:var(--muted);">|</span>
+    <span style="color:var(--muted);">Expires:</span>
+    <span style="font-weight:600;"><?= date('d M Y', strtotime($sub_info['expires_at'])) ?></span>
+</div>
+<?php endif; ?>
+
 <div class="row g-3 animate-in">
     <div class="col-6 col-xl-3">
         <div class="stat-card">
@@ -254,78 +335,4 @@ while ($r = $status_dist->fetch_assoc()) $status_data[$r['status']] = (int)$r['c
 </div>
 <?php endif; ?>
 
-<?php
-$extra_scripts = '
-<script>
-// Revenue chart
-const ctx1 = document.getElementById("revenueChart").getContext("2d");
-const gradient = ctx1.createLinearGradient(0,0,0,200);
-gradient.addColorStop(0,"rgba(200,169,126,0.3)");
-gradient.addColorStop(1,"rgba(200,169,126,0)");
-new Chart(ctx1, {
-    type: "line",
-    data: {
-        labels: ' . json_encode($weekly_labels) . ',
-        datasets: [{
-            label: "Revenue",
-            data: ' . json_encode($weekly) . ',
-            borderColor: "#c8a97e",
-            borderWidth: 2.5,
-            fill: true,
-            backgroundColor: gradient,
-            tension: 0.45,
-            pointBackgroundColor: "#c8a97e",
-            pointRadius: 4,
-            pointHoverRadius: 7
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false }, tooltip: {
-            backgroundColor: "#1a1408",
-            borderColor: "rgba(200,169,126,0.3)",
-            borderWidth: 1,
-            titleColor: "#f0ece4",
-            bodyColor: "#c8a97e",
-            callbacks: { label: ctx => " ₹" + ctx.raw.toLocaleString() }
-        }},
-        scales: {
-            x: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "rgba(240,236,228,0.45)", font:{size:12} } },
-            y: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "rgba(240,236,228,0.45)", font:{size:12}, callback: v => "₹"+v } }
-        }
-    }
-});
-
-// Status donut
-const ctx2 = document.getElementById("statusChart").getContext("2d");
-new Chart(ctx2, {
-    type: "doughnut",
-    data: {
-        labels: ["Pending","Processing","Out for Delivery","Delivered","Cancelled"],
-        datasets: [{
-            data: ' . json_encode(array_values($status_data)) . ',
-            backgroundColor: ["#fbbf24","#60a5fa","#a78bfa","#4ade80","#f87171"],
-            borderColor: "#111009",
-            borderWidth: 3,
-            hoverBorderWidth: 3
-        }]
-    },
-    options: {
-        responsive: true,
-        cutout: "72%",
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: "#1a1408",
-                borderColor: "rgba(200,169,126,0.3)",
-                borderWidth: 1,
-                titleColor: "#f0ece4",
-                bodyColor: "rgba(240,236,228,0.7)"
-            }
-        }
-    }
-});
-</script>';
-
-require 'includes/footer.php';
-?>
+<?php require 'includes/footer.php'; ?>

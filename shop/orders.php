@@ -1,7 +1,6 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
 
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 if (!$slug) { header("Location: ../index.php"); exit; }
@@ -131,10 +130,10 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
     </div>
 
     <?php else:
-    $status_order = ['pending'=>0,'processing'=>1,'out_for_delivery'=>2,'delivered'=>3,'cancelled'=>99];
-    $status_icons = ['pending'=>'clock','processing'=>'gear','out_for_delivery'=>'truck','delivered'=>'bag-check-fill','cancelled'=>'x-circle'];
-    $status_labels = ['pending'=>'Pending','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
-    $timeline_steps = ['pending','processing','out_for_delivery','delivered'];
+    $status_order = ['pending'=>0,'confirmed'=>1,'processing'=>2,'out_for_delivery'=>3,'delivered'=>4,'cancelled'=>99];
+    $status_icons = ['pending'=>'clock','confirmed'=>'check-circle','processing'=>'gear','out_for_delivery'=>'truck','delivered'=>'bag-check-fill','cancelled'=>'x-circle'];
+    $status_labels = ['pending'=>'Pending','confirmed'=>'Confirmed','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
+    $timeline_steps = ['pending','confirmed','processing','out_for_delivery','delivered'];
 
     $oi = 0;
     while ($order = $orders->fetch_assoc()):

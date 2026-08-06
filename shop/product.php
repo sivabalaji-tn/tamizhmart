@@ -1,7 +1,6 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
 
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 $pid  = (int)($_GET['id'] ?? 0);
@@ -26,8 +25,12 @@ $pstmt->execute();
 $product = $pstmt->get_result()->fetch_assoc();
 if (!$product) { header("Location: products.php?shop=$slug"); exit; }
 
-// Related products
-$related = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id=c.id WHERE p.category_id={$product['cat_id']} AND p.id != $pid AND p.shop_id=$shop_id AND p.is_active=1 LIMIT 4");
+// Related products — only run if product has a category
+if (!empty($product['cat_id'])) {
+    $related = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id=c.id WHERE p.category_id={$product['cat_id']} AND p.id != $pid AND p.shop_id=$shop_id AND p.is_active=1 LIMIT 4");
+} else {
+    $related = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id=c.id WHERE p.id != $pid AND p.shop_id=$shop_id AND p.is_active=1 LIMIT 4");
+}
 
 $disc     = $product['discount_price'];
 $orig     = $product['price'];

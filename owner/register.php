@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 // Check if registration is open
 $reg_open = $conn->query("SELECT setting_value FROM platform_settings WHERE setting_key='registration_open'")->fetch_row();
 if ($reg_open && $reg_open[0] === '0') {
@@ -47,7 +47,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt2->execute();
         $shop_id = $stmt2->insert_id;
 
+        // ── Auto-assign 30-day free trial ────────────────────────
+        $trial_expires = date('Y-m-d H:i:s', strtotime('+30 days'));
+        $grace_until   = date('Y-m-d H:i:s', strtotime('+37 days'));
+        $conn->query("INSERT INTO shop_subscriptions
+            (shop_id, plan_id, status, started_at, expires_at, grace_until)
+            VALUES ($shop_id, 1, 'trial', NOW(), '$trial_expires', '$grace_until')");
+
         $success = true;
+
+        // ── Send registration emails ──────────────────────────────
+        $shop_url = 'http://tamizhmart.optikl.ink/shop/index.php?shop=' . $shop_slug;
+
+        try {
+            require_once '../shop/includes/notifications.php';
+            // Email 1: To owner — welcome + shop details
+            sendOwnerRegistrationEmail($email, $name, $shop_name, $shop_slug, $shop_url);
+            // Email 2: To admin — new shop notification
+            sendAdminNewShopEmail($name, $email, $shop_name, $shop_slug, $shop_url);
+        } catch (Throwable $e) {
+            error_log('Registration email error: ' . $e->getMessage());
+        }
     }
 }
 ?>

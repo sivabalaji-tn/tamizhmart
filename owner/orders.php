@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 $page_title    = 'Orders';
 $page_subtitle = 'Manage and fulfil customer orders';
 
@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'update_status') {
         $oid    = (int)$_POST['order_id'];
         $status = $_POST['status'];
-        $allowed = ['pending','processing','out_for_delivery','delivered','cancelled'];
+        $allowed = ['pending','confirmed','processing','out_for_delivery','delivered','cancelled'];
         if (in_array($status, $allowed)) {
             $stmt = $conn->prepare("UPDATE orders SET status=? WHERE id=? AND shop_id=?");
             $stmt->bind_param("sii", $status, $oid, $shop_id);
@@ -47,7 +47,7 @@ $orders = $conn->query("
 ");
 
 // Status counts for tabs
-$status_tabs = ['all','pending','processing','out_for_delivery','delivered','cancelled'];
+$status_tabs = ['all','pending','confirmed','processing','out_for_delivery','delivered','cancelled'];
 $status_counts = [];
 foreach ($status_tabs as $s) {
     $w = $s === 'all' ? "shop_id=$shop_id" : "shop_id=$shop_id AND status='$s'";
@@ -62,7 +62,7 @@ foreach ($status_tabs as $s) {
 <!-- ── Status Tabs ── -->
 <div class="animate-in" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;">
     <?php
-    $tab_labels = ['all'=>'All','pending'=>'Pending','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
+    $tab_labels = ['all'=>'All','pending'=>'Pending','confirmed'=>'Confirmed','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
     foreach ($status_tabs as $s):
         $active = $filter_status === $s;
     ?>
@@ -212,7 +212,6 @@ foreach ($status_tabs as $s) {
 <?php require 'includes/footer.php'; ?>
 
 <script>
-let currentOrderId = null;
 function openStatusModal(orderId, currentStatus) {
     document.getElementById('modal_order_id').value = orderId;
     document.getElementById('modal_order_display').textContent = '#' + String(orderId).padStart(4, '0');
@@ -221,13 +220,12 @@ function openStatusModal(orderId, currentStatus) {
 }
 
 function viewOrder(orderId, order) {
-    currentOrderId = orderId;
     const statusColors = {
-        pending:'#fbbf24',processing:'#60a5fa',
+        pending:'#fbbf24',confirmed:'#34d399',processing:'#60a5fa',
         out_for_delivery:'#a855f7',delivered:'#4ade80',cancelled:'#f87171'
     };
     const statusLabel = {
-        pending:'Pending',processing:'Processing',
+        pending:'Pending',confirmed:'Confirmed',processing:'Processing',
         out_for_delivery:'Out for Delivery',delivered:'Delivered',cancelled:'Cancelled'
     };
     const color = statusColors[order.status] || '#888';
@@ -285,21 +283,16 @@ function viewOrder(orderId, order) {
             </div>
 
             <!-- Actions -->
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button onclick="openStatusModal(${orderId},'${order.status}');closeModal('viewModal');"
-                class="btn-primary-custom" style="flex:1;justify-content:center;">
-                <i class="bi bi-pencil"></i> Update Status
-            </button>
-
-            <button onclick="printInvoice()"
-                class="btn btn-success" style="flex:1;">
-                <i class="bi bi-printer"></i> Print Invoice
-            </button>
-
-            <button onclick="closeModal('viewModal')" 
-                class="btn-ghost-custom" style="padding:10px 18px;">
-                Close
-            </button>
+            <div style="display:flex;gap:10px;">
+                <button onclick="openStatusModal(${orderId},'${order.status}');closeModal('viewModal');"
+                    class="btn-primary-custom" style="flex:1;justify-content:center;">
+                    <i class="bi bi-pencil"></i> Update Status
+                </button>
+                <button onclick="window.open('invoice_pdf.php?order_id=${orderId}','_blank')"
+                    class="btn-ghost-custom" style="padding:10px 18px;color:var(--accent);border-color:var(--accent);" title="Print Invoice">
+                    <i class="bi bi-printer"></i> Invoice
+                </button>
+                <button onclick="closeModal('viewModal')" class="btn-ghost-custom" style="padding:10px 18px;">Close</button>
             </div>
         </div>
     `;
@@ -372,9 +365,5 @@ function handlePick(checkbox, idx) {
         row.style.background  = 'rgba(255,255,255,0.02)';
         badge.style.display   = 'none';
     }
-}
-function printInvoice() {
-    if (!currentOrderId) return;
-    window.open('invoice_pdf.php?order_id=' + currentOrderId, '_blank');
 }
 </script>
