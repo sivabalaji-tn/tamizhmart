@@ -40,7 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $setup = $conn->query("SELECT setting_value FROM shop_settings WHERE shop_id=$sid AND setting_key='setup_complete'")->fetch_assoc();
 
         // ── Check subscription status ─────────────────────────
-        $sub = $conn->query("SELECT ss.*, p.name AS plan_name FROM shop_subscriptions ss JOIN plans p ON ss.plan_id=p.id WHERE ss.shop_id=$sid ORDER BY ss.id DESC LIMIT 1")->fetch_assoc();
+        // Safe subscription check
+        $sub = null;
+        if ($sid) {
+            $sub_st = $conn->prepare("SELECT ss.*, p.name AS plan_name FROM shop_subscriptions ss JOIN plans p ON ss.plan_id=p.id WHERE ss.shop_id=? ORDER BY ss.id DESC LIMIT 1");
+            $sub_st->bind_param('i', $sid);
+            $sub_st->execute();
+            $sub = $sub_st->get_result()->fetch_assoc();
+        }
         if ($sub) {
             $now = time();
             $expires   = strtotime($sub['expires_at']);

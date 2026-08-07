@@ -13,13 +13,19 @@ require 'includes/sidebar.php';
 $shop_id = $_SESSION['shop_id'];
 
 // ── Subscription status for banner ────────────────────────────
-$sub_info = $conn->query("
-    SELECT ss.*, p.name AS plan_name, p.slug AS plan_slug, p.price AS plan_price
-    FROM shop_subscriptions ss
-    JOIN plans p ON ss.plan_id = p.id
-    WHERE ss.shop_id = $shop_id
-    ORDER BY ss.id DESC LIMIT 1
-")->fetch_assoc();
+$sub_info = null;
+if ($shop_id) {
+    $sub_q = $conn->prepare("
+        SELECT ss.*, p.name AS plan_name, p.slug AS plan_slug, p.price AS plan_price
+        FROM shop_subscriptions ss
+        JOIN plans p ON ss.plan_id = p.id
+        WHERE ss.shop_id = ?
+        ORDER BY ss.id DESC LIMIT 1
+    ");
+    $sub_q->bind_param('i', $shop_id);
+    $sub_q->execute();
+    $sub_info = $sub_q->get_result()->fetch_assoc();
+}
 
 // ── Stats ──────────────────────────────────────────────────
 // Total revenue
@@ -76,7 +82,7 @@ $top_products = $conn->query("
 
 // ── Order status distribution ─────────────────────────────────
 $status_dist = $conn->query("SELECT status, COUNT(*) as c FROM orders WHERE shop_id=$shop_id GROUP BY status");
-$status_data = ['pending'=>0,'processing'=>0,'out_for_delivery'=>0,'delivered'=>0,'cancelled'=>0];
+$status_data = ['pending'=>0,'confirmed'=>0,'processing'=>0,'out_for_delivery'=>0,'delivered'=>0,'cancelled'=>0];
 while ($r = $status_dist->fetch_assoc()) $status_data[$r['status']] = (int)$r['c'];
 ?>
 
@@ -225,8 +231,8 @@ if ($sub_info):
             <canvas id="statusChart" height="160"></canvas>
             <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px;">
                 <?php
-                $status_labels = ['pending'=>'Pending','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
-                $status_colors = ['pending'=>'#fbbf24','processing'=>'#60a5fa','out_for_delivery'=>'#a78bfa','delivered'=>'#4ade80','cancelled'=>'#f87171'];
+                $status_labels = ['pending'=>'Pending','confirmed'=>'Confirmed','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
+                $status_colors = ['pending'=>'#fbbf24','confirmed'=>'#34d399','processing'=>'#60a5fa','out_for_delivery'=>'#a78bfa','delivered'=>'#4ade80','cancelled'=>'#f87171'];
                 foreach ($status_data as $k => $v):
                     if ($v === 0) continue;
                 ?>

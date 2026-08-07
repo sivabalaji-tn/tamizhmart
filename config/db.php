@@ -22,9 +22,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 // If session already active — settings were applied at session_start() time
 
-define('DB_HOST', 'localhost');
+define('DB_HOST', 'mysql');
 define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_PASS', 'root');
 define('DB_NAME', 'tamizhmart_db');
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);

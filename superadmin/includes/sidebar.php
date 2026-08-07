@@ -221,6 +221,118 @@ $pending_orders = $conn->query("SELECT COUNT(*) FROM orders WHERE status='pendin
         .badge-purple  { background:var(--accent-dim);  color:var(--accent2); }
 
         /* ── Buttons ── */
+        /* ── Alerts ─────────────────────────── */
+        .alert-success, .alert-error {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13.5px;
+            margin-bottom: 16px;
+        }
+        .alert-success {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.25);
+            color: #059669;
+        }
+        .alert-error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.25);
+            color: #dc2626;
+        }
+
+        /* ── Select dropdown fix (dark theme) ─── */
+        select.input-custom option {
+            background: #1e1e2e;
+            color: #e2e8f0;
+        }
+        select.input-custom option:hover,
+        select.input-custom option:checked {
+            background: var(--accent);
+            color: #fff;
+        }
+        /* Fix all selects inside modals and pages */
+        select option {
+            background: #1a1a2e;
+            color: #e2e8f0;
+        }
+
+        /* ── Form labels ─────────────────────── */
+        .input-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        /* ── Modal overlay ───────────────────── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .modal-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text);
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .modal-close:hover { background: var(--card-border); color: var(--text); }
+        .modal-body { padding: 20px 24px; max-height: 70vh; overflow-y: auto; }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 16px 24px;
+            border-top: 1px solid var(--card-border);
+            flex-wrap: wrap;
+        }
+
+        /* ── Page header ─────────────────────── */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .page-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 22px;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+        .page-sub { font-size: 13px; color: var(--muted); margin: 3px 0 0; }
+
         .btn-primary-custom {
             display:inline-flex; align-items:center; gap:7px;
             padding:9px 18px; background:var(--accent);

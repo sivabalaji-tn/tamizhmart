@@ -16,14 +16,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email      = trim($_POST['email']);
     $password   = $_POST['password'];
     $shop_name  = trim($_POST['shop_name']);
-    $shop_slug  = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '-', $shop_name), '-'));
+    // Generate slug from shop name
+    $shop_slug = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '-', $shop_name), '-'));
+
+    // If slug is empty (e.g. shop name was all Tamil/special characters),
+    // use a sanitized version of the owner name or a random fallback
+    if (empty($shop_slug)) {
+        $name_slug = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '-', $name), '-'));
+        $shop_slug = !empty($name_slug) ? $name_slug . '-shop' : 'shop-' . substr(uniqid(), -6);
+    }
+
+    // Ensure slug is not too long
+    $shop_slug = substr($shop_slug, 0, 60);
 
     $check = $conn->prepare("SELECT id FROM owners WHERE email = ?");
     $check->bind_param("s", $email);
     $check->execute();
     $check->store_result();
 
-    if ($check->num_rows > 0) {
+    if (empty($name) || empty($email) || empty($password) || empty($shop_name)) {
+        $error = "All fields are required.";
+    } elseif ($check->num_rows > 0) {
         $error = "This email is already registered.";
     } else {
         $slugCheck = $conn->prepare("SELECT id FROM shops WHERE slug = ?");
