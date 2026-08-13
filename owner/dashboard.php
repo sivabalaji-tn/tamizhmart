@@ -305,7 +305,7 @@ if ($sub_info):
                 <p>No sales data yet</p>
             </div>
             <?php else: $rank = 1; while ($p = $top_products->fetch_assoc()): ?>
-            <div style="display:flex;align-items:center;gap:14px;padding:12px 0;<?= $rank < $top_products->num_rows + 1 ? 'border-bottom:1px solid var(--card-border);' : '' ?>">
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 0;<?= $rank < $top_products->num_rows ? 'border-bottom:1px solid var(--card-border);' : '' ?>">
                 <div style="width:34px;height:34px;border-radius:9px;overflow:hidden;background:var(--card-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
                     <?php if ($p['image']): ?>
                     <img src="../assets/uploads/products/<?= htmlspecialchars($p['image']) ?>" style="width:100%;height:100%;object-fit:cover;">
@@ -340,5 +340,113 @@ if ($sub_info):
     </div>
 </div>
 <?php endif; ?>
+
+<?php
+$weekly_json = json_encode($weekly);
+$labels_json = json_encode($weekly_labels);
+$sd_vals = json_encode(array_values($status_data));
+$sd_lbls = json_encode(array_values(array_map(fn($k)=>['pending'=>'Pending','confirmed'=>'Confirmed','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'][$k], array_keys($status_data))));
+$sd_cols = json_encode(array_values(['pending'=>'#fbbf24','confirmed'=>'#34d399','processing'=>'#60a5fa','out_for_delivery'=>'#a78bfa','delivered'=>'#4ade80','cancelled'=>'#f87171']));
+$extra_scripts = '
+<script>
+(function() {
+    if (typeof Chart === "undefined") return;
+
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#c8a97e";
+    const muted  = getComputedStyle(document.documentElement).getPropertyValue("--muted").trim()  || "#888";
+    const text   = getComputedStyle(document.documentElement).getPropertyValue("--text").trim()   || "#fff";
+
+    // ── Revenue Line Chart ────────────────────────────────────
+    const rCtx = document.getElementById("revenueChart");
+    if (rCtx) {
+        new Chart(rCtx, {
+            type: "line",
+            data: {
+                labels: ' . $labels_json . ',
+                datasets: [{
+                    label: "Revenue (₹)",
+                    data: ' . $weekly_json . ',
+                    borderColor: accent,
+                    backgroundColor: "rgba(200,169,126,0.08)",
+                    borderWidth: 2.5,
+                    pointBackgroundColor: accent,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => " ₹" + ctx.parsed.y.toLocaleString("en-IN")
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: "rgba(255,255,255,0.05)" },
+                        ticks: { color: muted, font: { size: 11 } }
+                    },
+                    y: {
+                        grid: { color: "rgba(255,255,255,0.05)" },
+                        ticks: {
+                            color: muted,
+                            font: { size: 11 },
+                            callback: v => "₹" + v.toLocaleString("en-IN")
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // ── Order Status Donut ────────────────────────────────────
+    const sCtx = document.getElementById("statusChart");
+    if (sCtx) {
+        const vals = ' . $sd_vals . ';
+        const lbls = ' . $sd_lbls . ';
+        const cols = ' . $sd_cols . ';
+
+        // Filter out zero values
+        const filtered = vals.map((v,i) => ({v,l:lbls[i],c:cols[i]})).filter(x => x.v > 0);
+
+        if (filtered.length > 0) {
+            new Chart(sCtx, {
+                type: "doughnut",
+                data: {
+                    labels: filtered.map(x => x.l),
+                    datasets: [{
+                        data: filtered.map(x => x.v),
+                        backgroundColor: filtered.map(x => x.c),
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: "70%",
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => " " + ctx.label + ": " + ctx.parsed
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            sCtx.parentElement.innerHTML += "<div style=\"text-align:center;padding:32px;color:#888;font-size:13px;\">No orders yet</div>";
+            sCtx.remove();
+        }
+    }
+})();
+</script>';
+?>
 
 <?php require 'includes/footer.php'; ?>

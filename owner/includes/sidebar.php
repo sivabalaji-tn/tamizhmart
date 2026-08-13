@@ -558,7 +558,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </a>
         <a href="customers.php" class="nav-item <?= $current_page === 'customers.php' ? 'active' : '' ?>">
             <i class="bi bi-people"></i> Customers
-        </a>
+        </a> 
         <a href="export_orders.php?format=print" target="_blank" class="nav-item">
             <i class="bi bi-file-earmark-arrow-down"></i> Export Orders
         </a>

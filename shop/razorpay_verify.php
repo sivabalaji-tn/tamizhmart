@@ -5,7 +5,6 @@
  *              shop_id, address, notes, amount }
  * Returns JSON: { success, order_number } or { success:false, error }
  */
-// ── This script is made by Siva Balaji sms ──────────────────────
 session_start();
 require '../config/db.php';
 header('Content-Type: application/json');
@@ -105,6 +104,14 @@ try {
 
     // Clear cart
     $conn->query("DELETE FROM cart WHERE user_id=$user_id AND shop_id=$shop_id");
+
+    // ── Log commission if shop is on a commission plan ────────
+    $comm_q = $conn->query("SELECT p.commission_rate FROM shop_subscriptions ss JOIN plans p ON ss.plan_id=p.id WHERE ss.shop_id=$shop_id AND p.commission_rate > 0 ORDER BY ss.id DESC LIMIT 1");
+    if ($comm_row = $comm_q->fetch_assoc()) {
+        $rate        = floatval($comm_row['commission_rate']);
+        $comm_amount = round($subtotal * $rate / 100, 2);
+        $conn->query("INSERT INTO commission_log (shop_id, order_id, order_amount, commission_rate, commission_amount) VALUES ($shop_id, $order_id, $subtotal, $rate, $comm_amount)");
+    }
 
     $conn->commit();
 

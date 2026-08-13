@@ -38,6 +38,7 @@ $save_pct = $disc ? round((($orig - $disc) / $orig) * 100) : 0;
 $page_title = htmlspecialchars($product['name']);
 
 require 'includes/shop_head.php';
+require_once 'includes/product_image.php';
 ?>
 
 <style>
@@ -183,8 +184,8 @@ require 'includes/shop_head.php';
             <!-- Image -->
             <div class="fade-up">
                 <div class="product-img-wrap">
-                    <?php if ($product['image']): ?>
-                    <img src="<?= strpos($product['image'],'http')===0 ? htmlspecialchars($product['image']) : '../assets/uploads/products/'.htmlspecialchars($product['image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                    <?php if (hasProductImg($product)): ?>
+                    <img src="<?= getProductImgSrc($product) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
                     <?php else: ?>
                     <i class="bi bi-image"></i>
                     <?php endif; ?>

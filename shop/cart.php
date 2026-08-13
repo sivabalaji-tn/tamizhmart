@@ -1,7 +1,6 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
 
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 if (!$slug) { header("Location: ../index.php"); exit; }
@@ -19,6 +18,7 @@ while ($r = $sr->fetch_assoc()) $settings_map[$r['setting_key']] = $r['setting_v
 
 $page_title = 'Your Cart';
 require 'includes/shop_head.php';
+require_once 'includes/product_image.php';
 
 requireCustomerLogin($shop);
 
@@ -131,8 +131,8 @@ while ($row = $cart_items->fetch_assoc()) {
                 <div class="cart-item" id="cartRow<?= $item['cart_id'] ?>">
                     <a href="product.php?shop=<?= $slug ?>&id=<?= $item['product_id'] ?>" style="text-decoration:none;flex-shrink:0;">
                         <div class="cart-item-img">
-                            <?php if ($item['image']): ?>
-                            <img src="<?= strpos($item['image'],'http')===0 ? htmlspecialchars($item['image']) : '../assets/uploads/products/'.htmlspecialchars($item['image']) ?>" alt="">
+                            <?php if (hasProductImg($item)): ?>
+                            <img src="<?= getProductImgSrc($item) ?>" alt="">
                             <?php else: ?>
                             <i class="bi bi-image"></i>
                             <?php endif; ?>

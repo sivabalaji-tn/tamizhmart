@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 $page_title    = 'Products';
 $page_subtitle = 'Add, edit and manage your product catalogue';
 $topbar_action_label   = 'Add Product';
@@ -17,7 +17,7 @@ $success = $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    // Handle image upload helper
+    // Handle image upload helper — returns filename (local) or full URL
     function uploadImage($file_key, $folder) {
         if (!isset($_FILES[$file_key]) || $_FILES[$file_key]['error'] !== 0) return null;
         $f    = $_FILES[$file_key];
@@ -26,11 +26,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($ext, $allowed)) return null;
         if ($f['size'] > 5 * 1024 * 1024) return null;
         $name = uniqid('img_') . '.' . $ext;
-        $dest = "../../assets/uploads/$folder/$name";
-        // We'll store relative to assets folder
         $dest = "../assets/uploads/$folder/$name";
         if (move_uploaded_file($f['tmp_name'], $dest)) return $name;
         return null;
+    }
+
+    // Returns uploaded filename or fallback filename
+    function resolveImageFile($file_key, $folder, $fallback = null) {
+        $uploaded = uploadImage($file_key, $folder);
+        return $uploaded ?? ($fallback && strpos($fallback, 'http') !== 0 ? $fallback : null);
+    }
+
+    // Returns image URL from POST or fallback URL
+    function resolveImageUrl($url_key, $fallback = null) {
+        $url = trim($_POST[$url_key] ?? '');
+        if ($url && filter_var($url, FILTER_VALIDATE_URL)) return $url;
+        return ($fallback && strpos($fallback, 'http') === 0) ? $fallback : null;
     }
 
     if ($action === 'add') {
@@ -41,10 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stock        = (int)$_POST['stock'];
         $cat_id       = (int)$_POST['category_id'];
         $is_active    = isset($_POST['is_active']) ? 1 : 0;
-        $image        = uploadImage('image', 'products');
+        $img_file = resolveImageFile('image', 'products');
+        $img_url  = resolveImageUrl('image_url');
 
-        $stmt = $conn->prepare("INSERT INTO products (shop_id, category_id, name, description, price, discount_price, image, stock, is_active) VALUES (?,?,?,?,?,?,?,?,?)");
-        $stmt->bind_param("iissddsii", $shop_id, $cat_id, $name, $desc, $price, $disc_price, $image, $stock, $is_active);
+        $stmt = $conn->prepare("INSERT INTO products (shop_id, category_id, name, description, price, discount_price, image, image_url, stock, is_active) VALUES (?,?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param("iissddssii", $shop_id, $cat_id, $name, $desc, $price, $disc_price, $img_file, $img_url, $stock, $is_active);
         if ($stmt->execute()) $success = "Product \"$name\" added successfully.";
         else $error = "Failed to add product.";
 
@@ -57,11 +69,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stock        = (int)$_POST['stock'];
         $cat_id       = (int)$_POST['category_id'];
         $is_active    = isset($_POST['is_active']) ? 1 : 0;
-        $old_image    = $_POST['old_image'];
-        $image        = uploadImage('image', 'products') ?? $old_image;
+        $old_image    = $_POST['old_image']    ?? null;
+        $old_image_url= $_POST['old_image_url'] ?? null;
+        $img_file = resolveImageFile('image', 'products', $old_image);
+        $img_url  = resolveImageUrl('image_url', $old_image_url);
 
-        $stmt = $conn->prepare("UPDATE products SET category_id=?, name=?, description=?, price=?, discount_price=?, image=?, stock=?, is_active=? WHERE id=? AND shop_id=?");
-        $stmt->bind_param("issddsiiii", $cat_id, $name, $desc, $price, $disc_price, $image, $stock, $is_active, $pid, $shop_id);
+        $stmt = $conn->prepare("UPDATE products SET category_id=?, name=?, description=?, price=?, discount_price=?, image=?, image_url=?, stock=?, is_active=? WHERE id=? AND shop_id=?");
+        $stmt->bind_param("issddssiiii", $cat_id, $name, $desc, $price, $disc_price, $img_file, $img_url, $stock, $is_active, $pid, $shop_id);
         if ($stmt->execute()) $success = "Product updated.";
         else $error = "Failed to update product.";
 
@@ -163,8 +177,12 @@ $products = $conn->query("
                     <td style="padding-left:20px;">
                         <div style="display:flex;align-items:center;gap:12px;">
                             <div style="width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--card-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-                                <?php if ($p['image']): ?>
-                                <img src="../assets/uploads/products/<?= htmlspecialchars($p['image']) ?>" style="width:100%;height:100%;object-fit:cover;">
+                                <?php
+                                $prod_img_src = !empty($p['image_url']) ? htmlspecialchars($p['image_url'])
+                                    : (!empty($p['image']) ? (strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image'])) : '');
+                                ?>
+                                <?php if ($prod_img_src): ?>
+                                <img src="<?= $prod_img_src ?>" style="width:100%;height:100%;object-fit:cover;">
                                 <?php else: ?>
                                 <i class="bi bi-image" style="color:var(--muted);font-size:18px;"></i>
                                 <?php endif; ?>
@@ -278,8 +296,28 @@ $products = $conn->query("
                 </div>
                 <div>
                     <div class="form-label-custom">Product Image</div>
-                    <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewImg(this,'addPreview')">
-                    <img id="addPreview" src="" style="margin-top:10px;max-height:100px;border-radius:8px;display:none;">
+                    <!-- Tab switcher -->
+                    <div style="display:flex;gap:0;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;margin-bottom:10px;width:fit-content;">
+                        <button type="button" id="addTabLocal" onclick="switchImgTab('add','local')"
+                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.2s;">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
+                        <button type="button" id="addTabUrl" onclick="switchImgTab('add','url')"
+                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--card-bg);color:var(--muted);transition:all 0.2s;">
+                            <i class="bi bi-link-45deg"></i> URL
+                        </button>
+                    </div>
+                    <!-- Local upload -->
+                    <div id="addPanelLocal">
+                        <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewImgFile(this,'addPreview')">
+                    </div>
+                    <!-- URL input -->
+                    <div id="addPanelUrl" style="display:none;">
+                        <input type="url" name="image_url" class="input-custom" placeholder="https://example.com/image.jpg"
+                            oninput="previewImgUrl(this.value,'addPreview')">
+                    </div>
+                    <!-- Preview -->
+                    <img id="addPreview" src="" style="margin-top:10px;max-height:110px;border-radius:8px;display:none;object-fit:cover;">
                 </div>
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
                     <input type="checkbox" name="is_active" value="1" checked style="accent-color:var(--accent);width:16px;height:16px;">
@@ -306,7 +344,8 @@ $products = $conn->query("
         <form method="POST" enctype="multipart/form-data" id="editProductForm">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="product_id" id="edit_pid">
-            <input type="hidden" name="old_image" id="edit_old_image">
+            <input type="hidden" name="old_image"     id="edit_old_image">
+                            <input type="hidden" name="old_image_url" id="edit_old_image_url">
             <div style="display:grid;gap:14px;">
                 <div>
                     <div class="form-label-custom">Product Name *</div>
@@ -342,8 +381,28 @@ $products = $conn->query("
                 </div>
                 <div>
                     <div class="form-label-custom">Replace Image</div>
-                    <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewImg(this,'editPreview')">
-                    <img id="editPreview" src="" style="margin-top:10px;max-height:100px;border-radius:8px;display:none;">
+                    <!-- Tab switcher -->
+                    <div style="display:flex;gap:0;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;margin-bottom:10px;width:fit-content;">
+                        <button type="button" id="editTabLocal" onclick="switchImgTab('edit','local')"
+                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.2s;">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
+                        <button type="button" id="editTabUrl" onclick="switchImgTab('edit','url')"
+                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--card-bg);color:var(--muted);transition:all 0.2s;">
+                            <i class="bi bi-link-45deg"></i> URL
+                        </button>
+                    </div>
+                    <!-- Local upload -->
+                    <div id="editPanelLocal">
+                        <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewImgFile(this,'editPreview')">
+                    </div>
+                    <!-- URL input -->
+                    <div id="editPanelUrl" style="display:none;">
+                        <input type="url" name="image_url" id="editImageUrl" class="input-custom" placeholder="https://example.com/image.jpg"
+                            oninput="previewImgUrl(this.value,'editPreview')">
+                    </div>
+                    <!-- Preview -->
+                    <img id="editPreview" src="" style="margin-top:10px;max-height:110px;border-radius:8px;display:none;object-fit:cover;">
                 </div>
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
                     <input type="checkbox" name="is_active" value="1" id="edit_active" style="accent-color:var(--accent);width:16px;height:16px;">
@@ -384,47 +443,113 @@ $products = $conn->query("
     </div>
 </div>
 
-<?php
-$extra_scripts = '
+<?php require 'includes/footer.php'; ?>
+
 <script>
-function openEditModal(p) {
-    document.getElementById("edit_pid").value   = p.id;
-    document.getElementById("edit_name").value  = p.name;
-    document.getElementById("edit_desc").value  = p.description || "";
-    document.getElementById("edit_price").value = p.price;
-    document.getElementById("edit_disc").value  = p.discount_price || "";
-    document.getElementById("edit_stock").value = p.stock;
-    document.getElementById("edit_cat").value   = p.category_id;
-    document.getElementById("edit_active").checked = p.is_active == 1;
-    document.getElementById("edit_old_image").value = p.image || "";
-    const prev = document.getElementById("editPreview");
-    if (p.image) {
-        prev.src = "../assets/uploads/products/" + p.image;
-        prev.style.display = "block";
-    } else { prev.style.display = "none"; }
-    openModal("editProductModal");
-}
+// ── Modal helpers ─────────────────────────────────────────────
+// openModal / closeModal defined in includes/footer.php
+document.querySelectorAll('.modal-backdrop-custom').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+});
 
-function confirmDelete(id, name) {
-    document.getElementById("deleteProductId").value = id;
-    document.getElementById("deleteProductName").textContent = "\"" + name + "\" will be permanently removed.";
-    openModal("deleteModal");
-}
+// ── Image tab switcher ────────────────────────────────────────
+function switchImgTab(prefix, tab) {
+    const localPanel = document.getElementById(prefix + 'PanelLocal');
+    const urlPanel   = document.getElementById(prefix + 'PanelUrl');
+    const localTab   = document.getElementById(prefix + 'TabLocal');
+    const urlTab     = document.getElementById(prefix + 'TabUrl');
 
-function previewImg(input, previewId) {
-    const prev = document.getElementById(previewId);
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => { prev.src = e.target.result; prev.style.display = "block"; };
-        reader.readAsDataURL(input.files[0]);
+    if (tab === 'local') {
+        localPanel.style.display = 'block';
+        urlPanel.style.display   = 'none';
+        localTab.style.background = 'var(--accent)';
+        localTab.style.color      = '#fff';
+        urlTab.style.background   = 'var(--card-bg)';
+        urlTab.style.color        = 'var(--muted)';
+        // Clear URL input & preview if switching away
+        const urlInput = urlPanel.querySelector('input[type=url]');
+        if (urlInput) urlInput.value = '';
+    } else {
+        urlPanel.style.display   = 'block';
+        localPanel.style.display = 'none';
+        urlTab.style.background  = 'var(--accent)';
+        urlTab.style.color       = '#fff';
+        localTab.style.background = 'var(--card-bg)';
+        localTab.style.color      = 'var(--muted)';
+        // Clear file input & preview if switching away
+        const fileInput = localPanel.querySelector('input[type=file]');
+        if (fileInput) fileInput.value = '';
     }
 }
 
-// Auto-open add modal if ?action=add
-if (new URLSearchParams(window.location.search).get("action") === "add") {
-    openModal("addProductModal");
+// ── Image preview helpers ─────────────────────────────────────
+function previewImgFile(input, previewId) {
+    const preview = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
 }
-</script>';
 
-require 'includes/footer.php';
-?>
+function previewImgUrl(url, previewId) {
+    const preview = document.getElementById(previewId);
+    if (url && url.startsWith('http')) {
+        preview.src = url;
+        preview.style.display = 'block';
+        preview.onerror = () => { preview.style.display = 'none'; };
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// ── Open Edit modal ───────────────────────────────────────────
+function openEdit(p) {
+    document.getElementById('edit_product_id').value    = p.id;
+    document.getElementById('edit_name').value           = p.name;
+    document.getElementById('edit_price').value          = p.price;
+    document.getElementById('edit_disc').value           = p.discount_price || '';
+    document.getElementById('edit_stock').value          = p.stock;
+    document.getElementById('edit_desc').value           = p.description || '';
+    document.getElementById('edit_old_image').value      = p.image     || '';
+    document.getElementById('edit_old_image_url').value  = p.image_url || '';
+    document.getElementById('edit_active').checked       = p.is_active == 1;
+
+    // Category select
+    const catSel = document.getElementById('edit_category');
+    if (catSel) catSel.value = p.category_id || '';
+
+    const preview = document.getElementById('editPreview');
+    const urlInput = document.getElementById('editImageUrl');
+
+    // If product has a URL image — switch to URL tab and prefill
+    if (p.image_url) {
+        switchImgTab('edit', 'url');
+        if (urlInput) urlInput.value = p.image_url;
+        preview.src = p.image_url;
+        preview.style.display = 'block';
+    } else if (p.image) {
+        // Has uploaded file — show on Upload tab
+        switchImgTab('edit', 'local');
+        preview.src = '../assets/uploads/products/' + p.image;
+        preview.style.display = 'block';
+    } else {
+        switchImgTab('edit', 'local');
+        preview.style.display = 'none';
+    }
+
+    openModal('editProductModal');
+}
+
+// ── Delete confirm ────────────────────────────────────────────
+function confirmDelete(id, name) {
+    document.getElementById('deleteProductId').value  = id;
+    document.getElementById('deleteProductName').textContent = '"' + name + '"';
+    openModal('deleteModal');
+}
+</script>

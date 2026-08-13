@@ -37,25 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = "Plan \"$name\" created.";
             } else {
                 $st = $conn->prepare("UPDATE plans SET name=?,slug=?,price=?,duration_days=?,product_limit=?,order_limit=?,commission_rate=?,features=?,is_active=?,sort_order=? WHERE id=?");
-                $st->bind_param('ssdiiidsiix', $name,$slug,$price,$duration,$product_limit,$order_limit,$commission,$features_json,$is_active,$sort_order,$id);
-                // fix types
-                $st->close();
-                $pl = $product_limit === null ? 'NULL' : intval($product_limit);
-                $ol = $order_limit   === null ? 'NULL' : intval($order_limit);
-                $pl_sql = $product_limit === null ? 'NULL' : $product_limit;
-                $ol_sql = $order_limit   === null ? 'NULL' : $order_limit;
-                $conn->query("UPDATE plans SET
-                    name='".addslashes($name)."',
-                    slug='".addslashes($slug)."',
-                    price=$price,
-                    duration_days=$duration,
-                    product_limit=".($product_limit===null?'NULL':intval($product_limit)).",
-                    order_limit=".($order_limit===null?'NULL':intval($order_limit)).",
-                    commission_rate=$commission,
-                    features='".addslashes($features_json)."',
-                    is_active=$is_active,
-                    sort_order=$sort_order
-                    WHERE id=$id");
+                $st->bind_param('ssdiiidsiii', $name,$slug,$price,$duration,$product_limit,$order_limit,$commission,$features_json,$is_active,$sort_order,$id);
+                $st->execute();
                 $success = "Plan \"$name\" updated.";
             }
         }

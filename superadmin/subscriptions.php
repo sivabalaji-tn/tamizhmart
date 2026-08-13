@@ -119,6 +119,22 @@ $stats = $conn->query("
 ")->fetch_assoc();
 
 $plans_list = $conn->query("SELECT id, name FROM plans WHERE is_active=1 ORDER BY sort_order")->fetch_all(MYSQLI_ASSOC);
+
+// ── Commission earned per shop ────────────────────────────────
+$commission_data = $conn->query("
+    SELECT s.name AS shop_name, p.name AS plan_name, p.commission_rate,
+           COALESCE(SUM(o.total_amount),0) AS total_revenue,
+           COALESCE(SUM(o.total_amount) * p.commission_rate / 100, 0) AS commission_earned
+    FROM shops s
+    JOIN shop_subscriptions ss ON ss.shop_id = s.id
+    JOIN plans p ON ss.plan_id = p.id
+    LEFT JOIN orders o ON o.shop_id = s.id AND o.status NOT IN ('cancelled','pending')
+    WHERE p.commission_rate > 0
+    GROUP BY s.id, p.id
+    ORDER BY commission_earned DESC
+")->fetch_all(MYSQLI_ASSOC);
+
+$total_commission = array_sum(array_column($commission_data, 'commission_earned'));
 $shops_list = $conn->query("SELECT s.id, s.name, o.email FROM shops s JOIN owners o ON s.owner_id=o.id WHERE s.is_active=1 ORDER BY s.name")->fetch_all(MYSQLI_ASSOC);
 
 require __DIR__ . '/includes/sidebar.php';
@@ -218,6 +234,56 @@ function statusBadge($status, $expires_at) {
         <div class="lbl">MRR</div>
     </div>
 </div>
+
+<!-- Commission Earned Card -->
+<?php if (!empty($commission_data)): ?>
+<div class="card-glass animate-in" style="margin-bottom:24px;border-color:rgba(200,169,126,0.2);">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+        <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;">
+                <i class="bi bi-cash-coin" style="color:#ca8a04;"></i> Commission Earnings
+            </div>
+            <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">From shops on commission-based plans</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:12px;color:var(--muted);">Total Commission Earned</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#ca8a04;">
+                ₹<?= number_format($total_commission, 2) ?>
+            </div>
+        </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+            <tr style="background:var(--card-border);">
+                <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Shop</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Plan</th>
+                <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Commission %</th>
+                <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Shop Revenue</th>
+                <th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">You Earn</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($commission_data as $i => $cd): ?>
+        <tr style="border-top:1px solid var(--card-border);background:<?= $i%2===0 ? 'transparent' : 'rgba(255,255,255,0.02)' ?>;">
+            <td style="padding:12px 14px;font-weight:600;"><?= htmlspecialchars($cd['shop_name']) ?></td>
+            <td style="padding:12px 14px;color:var(--muted);"><?= htmlspecialchars($cd['plan_name']) ?></td>
+            <td style="padding:12px 14px;text-align:right;color:#ca8a04;font-weight:700;"><?= $cd['commission_rate'] ?>%</td>
+            <td style="padding:12px 14px;text-align:right;">₹<?= number_format($cd['total_revenue'], 2) ?></td>
+            <td style="padding:12px 14px;text-align:right;font-family:'Syne',sans-serif;font-weight:800;color:#16a34a;">
+                ₹<?= number_format($cd['commission_earned'], 2) ?>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+        <tr style="border-top:2px solid var(--card-border);background:rgba(200,169,126,0.05);">
+            <td colspan="4" style="padding:12px 14px;font-weight:700;text-align:right;">Total Commission</td>
+            <td style="padding:12px 14px;text-align:right;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#ca8a04;">
+                ₹<?= number_format($total_commission, 2) ?>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
 
 <!-- Filters -->
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;" class="animate-in d1">

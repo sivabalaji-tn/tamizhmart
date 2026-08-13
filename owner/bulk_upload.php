@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
+
 $page_title    = 'Bulk Upload Products';
 $page_subtitle = 'Import multiple products at once via CSV';
 
@@ -42,10 +42,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
                 if ($cr->num_rows > 0) $cat_id = $cr->fetch_assoc()['id'];
             }
 
-            $img = !empty($image_url) && filter_var($image_url, FILTER_VALIDATE_URL) ? $image_url : null;
+            // Split: if it's a URL → store in image_url column; if filename → image column
+            $is_url    = !empty($image_url) && filter_var($image_url, FILTER_VALIDATE_URL);
+            $img_file  = $is_url ? null       : null;   // bulk upload can't upload files
+            $img_url   = $is_url ? $image_url : null;
 
-            $stmt = $conn->prepare("INSERT INTO products (shop_id, category_id, name, description, price, discount_price, image, stock, is_active) VALUES (?,?,?,?,?,?,?,?,1)");
-            $stmt->bind_param("iissddsi", $shop_id, $cat_id, $name, $description, $price, $disc_price, $img, $stock);
+            $stmt = $conn->prepare("INSERT INTO products (shop_id, category_id, name, description, price, discount_price, image, image_url, stock, is_active) VALUES (?,?,?,?,?,?,?,?,?,1)");
+            $stmt->bind_param("iissddssi", $shop_id, $cat_id, $name, $description, $price, $disc_price, $img_file, $img_url, $stock);
             if ($stmt->execute()) {
                 $added++;
                 $results[] = ['status'=>'ok','name'=>$name,'msg'=>'Added successfully'];
