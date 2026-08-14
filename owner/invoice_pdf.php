@@ -22,7 +22,8 @@ $stmt = $conn->prepare("
            u.name  AS customer_name,
            u.email AS customer_email,
            u.phone AS customer_phone,
-           s.name  AS shop_name,
+           s.name    AS shop_name,
+           s.logo    AS shop_logo,
            s.address AS shop_address,
            s.city    AS shop_city,
            s.state   AS shop_state,
@@ -45,7 +46,8 @@ $settings = [];
 $sr = $conn->query("SELECT setting_key, setting_value FROM shop_settings WHERE shop_id=$shop_id");
 while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value'];
 
-$shop_logo = $settings['logo']   ?? '';
+// Logo comes from shops table (s.logo), not shop_settings
+$shop_logo = $order['shop_logo'] ?? '';
 $gstin     = $settings['gstin']  ?? '';
 
 // ── Fetch order items ─────────────────────────────────────────
@@ -73,13 +75,15 @@ $tax_rate    = $cgst_rate;
 $invoice_num   = 'TM-' . strtoupper(substr($order['shop_name'], 0, 3)) . '-' . date('y') . '-' . str_pad($order['shop_order_number'], 4, '0', STR_PAD_LEFT);
 $order_date    = date('d.m.Y', strtotime($order['created_at']));
 
-// Logo
+// Logo — stored in assets/uploads/logos/
 $logo_src = '';
 if ($shop_logo) {
-    $p1 = '../assets/uploads/logos/' . $shop_logo;
-    $p2 = '../uploads/logos/'        . $shop_logo;
-    if      (file_exists($p1)) $logo_src = $p1;
-    else if (file_exists($p2)) $logo_src = $p2;
+    if (strpos($shop_logo, 'http') === 0) {
+        $logo_src = $shop_logo; // external URL
+    } else {
+        $path = '../assets/uploads/logos/' . $shop_logo;
+        if (file_exists($path)) $logo_src = $path;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -146,8 +150,8 @@ body { font-family:Arial,Helvetica,sans-serif; font-size:9pt; color:#000; backgr
 <body>
 
 <div class="print-bar">
-    <button class="btn-print" onclick="window.print()">🖨️ Print / Save PDF</button>
-    <button class="btn-back"  onclick="window.history.back()">← Back</button>
+    <button class="btn-print" onclick="window.print()">Print / Save PDF</button>
+    <button class="btn-back" onclick="window.location.href='orders.php'">&#x2190; Back to Orders</button>
 </div>
 
 <div class="page">

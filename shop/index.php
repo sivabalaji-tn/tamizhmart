@@ -337,8 +337,12 @@ require 'includes/shop_head.php';
             <div class="prod-card sf-in" style="animation-delay:<?= $delay ?>s;">
                 <a href="product.php?shop=<?= $slug ?>&id=<?= $p['id'] ?>" style="display:block;text-decoration:none;">
                     <div class="prod-img-wrap">
-                        <?php if ($p['image']): ?>
-                        <img src="<?= strpos($p['image'],'http')===0?htmlspecialchars($p['image']):'../assets/uploads/products/'.htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy">
+                        <?php
+                        $prod_img = !empty($p['image_url']) ? htmlspecialchars($p['image_url'])
+                            : (!empty($p['image']) ? (strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image'])) : '');
+                        ?>
+                        <?php if ($prod_img): ?>
+                        <img src="<?= $prod_img ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy">
                         <?php else: ?><div class="prod-no-img"><i class="bi bi-image"></i></div><?php endif; ?>
                         <?php if ($disc && $save_pct>0): ?><div class="prod-badge-disc">-<?= $save_pct ?>%</div><?php endif; ?>
                         <?php if ($i<=3): ?><div class="prod-badge-new">NEW</div><?php endif; ?>
@@ -377,7 +381,11 @@ require 'includes/shop_head.php';
             <a href="product.php?shop=<?= $slug ?>&id=<?= $b['id'] ?>" class="bs-card sf-in" style="animation-delay:<?= ($rank-1)*0.07 ?>s;">
                 <div class="bs-rank">#<?= $rank ?></div>
                 <div class="bs-img">
-                    <?php if ($b['image']): ?><img src="<?= strpos($b['image'],'http')===0?htmlspecialchars($b['image']):'../assets/uploads/products/'.htmlspecialchars($b['image']) ?>" alt=""><?php else: ?><i class="bi bi-image"></i><?php endif; ?>
+                    <?php
+                    $bs_img = !empty($b['image_url']) ? htmlspecialchars($b['image_url'])
+                        : (!empty($b['image']) ? (strpos($b['image'],'http')===0 ? htmlspecialchars($b['image']) : '../assets/uploads/products/'.htmlspecialchars($b['image'])) : '');
+                    ?>
+                    <?php if ($bs_img): ?><img src="<?= $bs_img ?>" alt=""><?php else: ?><i class="bi bi-image"></i><?php endif; ?>
                 </div>
                 <div style="flex:1;min-width:0;">
                     <div class="bs-name"><?= htmlspecialchars($b['name']) ?></div>

@@ -139,7 +139,7 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
     while ($order = $orders->fetch_assoc()):
         $oi++;
         $current_step = $status_order[$order['status']] ?? 0;
-        $order_items_q = $conn->query("SELECT oi.*, p.name, p.image FROM order_items oi JOIN products p ON oi.product_id=p.id WHERE oi.order_id={$order['id']}");
+        $order_items_q = $conn->query("SELECT oi.*, p.name, p.image, p.image_url FROM order_items oi JOIN products p ON oi.product_id=p.id WHERE oi.order_id={$order['id']}");
     ?>
     <div class="order-card fade-up" style="animation-delay:<?= ($oi * 0.05) ?>s;">
         <div class="order-card-header" onclick="toggleOrder('order<?= $order['id'] ?>')">
@@ -197,8 +197,12 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
                 <?php while ($oi_row = $order_items_q->fetch_assoc()): ?>
                 <div class="order-item-row">
                     <div class="order-item-img">
-                        <?php if ($oi_row['image']): ?>
-                        <img src="../assets/uploads/products/<?= htmlspecialchars($oi_row['image']) ?>" alt="">
+                        <?php
+                        $oi_img = !empty($oi_row['image_url']) ? htmlspecialchars($oi_row['image_url'])
+                            : (!empty($oi_row['image']) ? (strpos($oi_row['image'],'http')===0 ? htmlspecialchars($oi_row['image']) : '../assets/uploads/products/'.htmlspecialchars($oi_row['image'])) : '');
+                        ?>
+                        <?php if ($oi_img): ?>
+                        <img src="<?= $oi_img ?>" alt="">
                         <?php else: ?>
                         <i class="bi bi-image" style="color:var(--primary-glow);font-size:18px;"></i>
                         <?php endif; ?>

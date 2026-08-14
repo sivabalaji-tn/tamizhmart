@@ -509,8 +509,8 @@ function previewImgUrl(url, previewId) {
 }
 
 // ── Open Edit modal ───────────────────────────────────────────
-function openEdit(p) {
-    document.getElementById('edit_product_id').value    = p.id;
+function openEditModal(p) {
+    document.getElementById('edit_pid').value             = p.id;
     document.getElementById('edit_name').value           = p.name;
     document.getElementById('edit_price').value          = p.price;
     document.getElementById('edit_disc').value           = p.discount_price || '';
@@ -521,7 +521,7 @@ function openEdit(p) {
     document.getElementById('edit_active').checked       = p.is_active == 1;
 
     // Category select
-    const catSel = document.getElementById('edit_category');
+    const catSel = document.getElementById('edit_cat');
     if (catSel) catSel.value = p.category_id || '';
 
     const preview = document.getElementById('editPreview');

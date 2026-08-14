@@ -49,10 +49,13 @@ $products = $conn->query("
             </div>
 
             <!-- Image -->
-            <div style="width:48px;height:48px;border-radius:10px;overflow:hidden;background:var(--primary-light);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-                <?php if ($p['image']): ?>
-                <img src="<?= strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image']) ?>"
-                     style="width:100%;height:100%;object-fit:cover;">
+            <div style="width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--card-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                <?php
+                $prod_img_src = !empty($p['image_url']) ? htmlspecialchars($p['image_url'])
+                    : (!empty($p['image']) ? (strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image'])) : '');
+                ?>
+                <?php if ($prod_img_src): ?>
+                <img src="<?= $prod_img_src ?>" style="width:100%;height:100%;object-fit:cover;">
                 <?php else: ?>
                 <i class="bi bi-image" style="color:var(--muted);font-size:18px;"></i>
                 <?php endif; ?>

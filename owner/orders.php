@@ -318,9 +318,11 @@ function viewOrder(orderId, order) {
             };
 
             container.innerHTML = items.map((item, idx) => {
-                const imgSrc = item.image
-                    ? (item.image.startsWith('http') ? item.image : `../assets/uploads/products/${item.image}`)
-                    : null;
+                const imgSrc = item.image_url
+                    ? item.image_url
+                    : (item.image
+                        ? (item.image.startsWith('http') ? item.image : `../assets/uploads/products/${item.image}`)
+                        : null);
                 return `
                 <label id="pickrow_${idx}" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.02);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;cursor:pointer;transition:all 0.2s;">
                     <input type="checkbox" id="pick_${idx}" onchange="handlePick(this,${idx})"

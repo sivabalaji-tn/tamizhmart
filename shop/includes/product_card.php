@@ -11,8 +11,12 @@ $delay = min($i * 0.05, 0.4);
     <!-- Image -->
     <a href="product.php?shop=<?= $slug ?>&id=<?= $p['id'] ?>" style="display:block;text-decoration:none;">
         <div class="product-card-img" style="height:200px;">
-            <?php if ($p['image']): ?>
-            <img src="<?= strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <?php
+            $pc_img = !empty($p['image_url']) ? htmlspecialchars($p['image_url'])
+                : (!empty($p['image']) ? (strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image'])) : '');
+            ?>
+            <?php if ($pc_img): ?>
+            <img src="<?= $pc_img ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
             <?php else: ?>
             <div style="width:100%;height:100%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;">
                 <i class="bi bi-image" style="font-size:40px;color:var(--primary-glow);"></i>

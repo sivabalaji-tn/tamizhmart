@@ -34,7 +34,7 @@ $user    = $conn->query("SELECT * FROM users WHERE id=$user_id LIMIT 1")->fetch_
 
 // ── Cart — redirect before any output ────────────────────────
 $cq = $conn->query("
-    SELECT c.quantity, p.id AS pid, p.name, p.price, p.discount_price, p.image
+    SELECT c.quantity, p.id AS pid, p.name, p.price, p.discount_price, p.image, p.image_url
     FROM cart c
     JOIN products p ON c.product_id = p.id
     WHERE c.user_id=$user_id AND c.shop_id=$shop_id AND p.is_active=1
@@ -77,7 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cod')
                 $oi = $conn->prepare("INSERT INTO order_items (order_id,product_id,quantity,price) VALUES (?,?,?,?)");
                 $oi->bind_param('iiid', $oid, $it['pid'], $it['quantity'], $it['fp']);
                 $oi->execute();
-                $conn->query("UPDATE products SET stock=stock-{$it['quantity']} WHERE id={$it['pid']} AND stock>={$it['quantity']}");
+                $stock_upd = $conn->prepare("UPDATE products SET stock=stock-? WHERE id=? AND stock>=?");
+                $stock_upd->bind_param('iii', $it['quantity'], $it['pid'], $it['quantity']);
+                $stock_upd->execute();
             }
             $conn->query("DELETE FROM cart WHERE user_id=$user_id AND shop_id=$shop_id");
 
@@ -395,8 +397,12 @@ requireCustomerLogin($shop);
                     <?php foreach ($items as $it): ?>
                     <div class="sum-item">
                         <div class="sum-thumb">
-                            <?php if ($it['image']): ?>
-                            <img src="../assets/uploads/products/<?= htmlspecialchars($it['image']) ?>" alt="">
+                            <?php
+                            $it_img = !empty($it['image_url']) ? htmlspecialchars($it['image_url'])
+                                : (!empty($it['image']) ? (strpos($it['image'],'http')===0 ? htmlspecialchars($it['image']) : '../assets/uploads/products/'.htmlspecialchars($it['image'])) : '');
+                            ?>
+                            <?php if ($it_img): ?>
+                            <img src="<?= $it_img ?>" alt="">
                             <?php else: ?>
                             <i class="bi bi-image" style="color:var(--primary-glow);"></i>
                             <?php endif; ?>

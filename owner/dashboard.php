@@ -73,7 +73,7 @@ $recent_orders = $conn->query("
 
 // ── Top products ─────────────────────────────────────────────
 $top_products = $conn->query("
-    SELECT p.name, p.image, SUM(oi.quantity) as sold, SUM(oi.quantity * oi.price) as revenue
+    SELECT p.name, p.image, p.image_url, SUM(oi.quantity) as sold, SUM(oi.quantity * oi.price) as revenue
     FROM order_items oi
     JOIN products p ON oi.product_id=p.id
     WHERE p.shop_id=$shop_id
@@ -292,7 +292,7 @@ if ($sub_info):
 
     <!-- Top Products -->
     <div class="col-lg-5">
-        <div class="card-glass" style="height:100%;">
+        <div class="card-glass" style="height:fit-content;">
             <div class="section-head">
                 <div>
                     <div class="section-title">Top Products</div>
@@ -307,8 +307,12 @@ if ($sub_info):
             <?php else: $rank = 1; while ($p = $top_products->fetch_assoc()): ?>
             <div style="display:flex;align-items:center;gap:14px;padding:12px 0;<?= $rank < $top_products->num_rows ? 'border-bottom:1px solid var(--card-border);' : '' ?>">
                 <div style="width:34px;height:34px;border-radius:9px;overflow:hidden;background:var(--card-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-                    <?php if ($p['image']): ?>
-                    <img src="../assets/uploads/products/<?= htmlspecialchars($p['image']) ?>" style="width:100%;height:100%;object-fit:cover;">
+                    <?php
+                    $dash_img = !empty($p['image_url']) ? htmlspecialchars($p['image_url'])
+                        : (!empty($p['image']) ? (strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image'])) : '');
+                    ?>
+                    <?php if ($dash_img): ?>
+                    <img src="<?= $dash_img ?>" style="width:100%;height:100%;object-fit:cover;">
                     <?php else: ?>
                     <i class="bi bi-image" style="color:var(--muted);font-size:14px;"></i>
                     <?php endif; ?>

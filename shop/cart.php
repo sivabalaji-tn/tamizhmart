@@ -26,7 +26,7 @@ $user_id = $_SESSION['user_id'];
 
 // Fetch cart items
 $cart_items = $conn->query("
-    SELECT c.id as cart_id, c.quantity, p.id as product_id, p.name, p.price, p.discount_price, p.image, p.stock
+    SELECT c.id as cart_id, c.quantity, p.id as product_id, p.name, p.price, p.discount_price, p.image, p.image_url, p.stock
     FROM cart c JOIN products p ON c.product_id=p.id
     WHERE c.user_id=$user_id AND c.shop_id=$shop_id AND p.is_active=1
     ORDER BY c.created_at ASC

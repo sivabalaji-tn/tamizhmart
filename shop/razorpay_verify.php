@@ -99,7 +99,9 @@ try {
         $oi = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?,?,?,?)");
         $oi->bind_param('iiid', $order_id, $it['pid'], $it['quantity'], $it['fp']);
         $oi->execute();
-        $conn->query("UPDATE products SET stock=stock-{$it['quantity']} WHERE id={$it['pid']} AND stock>={$it['quantity']}");
+        $stock_upd = $conn->prepare("UPDATE products SET stock=stock-? WHERE id=? AND stock>=?");
+        $stock_upd->bind_param('iii', $it['quantity'], $it['pid'], $it['quantity']);
+        $stock_upd->execute();
     }
 
     // Clear cart

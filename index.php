@@ -812,7 +812,7 @@ footer {
         <span>by</span>
         <strong style="color:rgba(255,255,255,0.6);">SM Tech</strong>
         <span style="margin:0 6px;">·</span>
-        <span>TamizhMart © <?= date('Y') ?></span>
+        <span>TamizhMart © <?= date('Y, D, M, T') ?></span>
         <span style="margin:0 6px;">·</span>
         <span>Tamil Nadu, India</span>
     </div>
