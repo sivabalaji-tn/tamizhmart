@@ -2,14 +2,15 @@
 session_start();
 require '../config/db.php';
 // ── This script is made by Siva Balaji sms ──────────────────────
-$page_title    = 'Dashboard';
-$page_subtitle = 'Platform overview at a glance';
+$page_title    = 'Command Console';
+$page_subtitle = 'Global platform operations & real-time telemetry';
 
 require __DIR__ . '/includes/sidebar.php';
 
 // ── Platform Stats ────────────────────────────────────────────
 $total_shops     = $conn->query("SELECT COUNT(*) FROM shops")->fetch_row()[0];
 $active_shops    = $conn->query("SELECT COUNT(*) FROM shops WHERE is_active=1 AND (is_suspended IS NULL OR is_suspended=0)")->fetch_row()[0];
+$suspended_shops = $conn->query("SELECT COUNT(*) FROM shops WHERE is_suspended=1")->fetch_row()[0];
 $total_owners    = $conn->query("SELECT COUNT(*) FROM owners")->fetch_row()[0];
 $total_customers = $conn->query("SELECT COUNT(*) FROM users")->fetch_row()[0];
 $total_orders    = $conn->query("SELECT COUNT(*) FROM orders")->fetch_row()[0];
@@ -65,24 +66,28 @@ foreach ($statuses as $st) {
 }
 ?>
 
-<!-- ── Today Banner ── -->
-<div class="animate-in" style="background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(124,58,237,0.08));border:1px solid rgba(168,85,247,0.2);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+<!-- ── Live System Telemetry Banner ── -->
+<div class="animate-in" style="background:linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(6, 182, 212, 0.06)); border:1px solid rgba(59, 130, 246, 0.2); border-radius:var(--radius); padding:22px 28px; margin-bottom:24px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; position:relative; overflow:hidden; backdrop-filter:blur(12px);">
+    <div style="position:absolute; right:-40px; top:-40px; width:200px; height:200px; background:radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%); pointer-events:none;"></div>
     <div>
-        <div style="font-size:12px;color:var(--accent2);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Today — <?= date('l, d F Y') ?></div>
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-top:2px;">Good <?= date('H') < 12 ? 'Morning' : (date('H') < 17 ? 'Afternoon' : 'Evening') ?>, <?= htmlspecialchars($_SESSION['superadmin_name']) ?> 👋</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+            <span style="font-size:11px; color:var(--cyan-neon); font-weight:700; letter-spacing:1px; text-transform:uppercase; font-family:'JetBrains Mono',monospace;">REAL-TIME TELEMETRY &middot; <?= date('d M Y, H:i T') ?></span>
+        </div>
+        <div style="font-family:'Syne',sans-serif; font-weight:800; font-size:22px; color:#fff;">Welcome back, <?= htmlspecialchars($_SESSION['superadmin_name']) ?></div>
+        <div style="font-size:12.5px; color:var(--muted); margin-top:2px;">All platform microservices operating at optimal latency.</div>
     </div>
-    <div style="margin-left:auto;display:flex;gap:20px;flex-wrap:wrap;">
-        <div style="text-align:center;">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent);"><?= $today_orders ?></div>
-            <div style="font-size:11.5px;color:var(--muted);">Orders Today</div>
+    <div style="margin-left:auto; display:flex; gap:24px; flex-wrap:wrap;">
+        <div style="padding:10px 18px; background:rgba(15, 23, 42, 0.6); border:1px solid rgba(59, 130, 246, 0.15); border-radius:10px; text-align:center; min-width:110px;">
+            <div style="font-family:'Syne',sans-serif; font-weight:800; font-size:20px; color:var(--accent-bright);"><?= $today_orders ?></div>
+            <div style="font-size:11px; color:var(--muted); font-weight:500; margin-top:2px;">Today's Orders</div>
         </div>
-        <div style="text-align:center;">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--success);">₹<?= number_format($today_revenue, 0) ?></div>
-            <div style="font-size:11.5px;color:var(--muted);">Revenue Today</div>
+        <div style="padding:10px 18px; background:rgba(15, 23, 42, 0.6); border:1px solid rgba(16, 185, 129, 0.2); border-radius:10px; text-align:center; min-width:130px;">
+            <div style="font-family:'Syne',sans-serif; font-weight:800; font-size:20px; color:var(--success);">&#8377;<?= number_format($today_revenue, 0) ?></div>
+            <div style="font-size:11px; color:var(--muted); font-weight:500; margin-top:2px;">Today's Gross</div>
         </div>
-        <div style="text-align:center;">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--info);"><?= $today_signups ?></div>
-            <div style="font-size:11.5px;color:var(--muted);">New Customers</div>
+        <div style="padding:10px 18px; background:rgba(15, 23, 42, 0.6); border:1px solid rgba(6, 182, 212, 0.2); border-radius:10px; text-align:center; min-width:110px;">
+            <div style="font-family:'Syne',sans-serif; font-weight:800; font-size:20px; color:var(--cyan-neon);"><?= $today_signups ?></div>
+            <div style="font-size:11px; color:var(--muted); font-weight:500; margin-top:2px;">New Users</div>
         </div>
     </div>
 </div>
@@ -90,42 +95,42 @@ foreach ($statuses as $st) {
 <!-- ── Stat Cards ── -->
 <div class="row g-3 animate-in d1" style="margin-bottom:24px;">
     <div class="col-6 col-lg-3">
-        <div class="stat-card" style="--glow-color:rgba(168,85,247,0.08);">
-            <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent);"><i class="bi bi-shop"></i></div>
+        <div class="stat-card" style="--glow-color:rgba(59, 130, 246, 0.1);">
+            <div class="stat-icon" style="background:var(--accent-glow); color:var(--accent-bright);"><i class="bi bi-shop-window"></i></div>
             <div>
                 <div class="stat-val"><?= $total_shops ?></div>
-                <div class="stat-label">Total Shops</div>
-                <div class="stat-change" style="color:var(--success);"><?= $active_shops ?> active</div>
+                <div class="stat-label">Merchant Network</div>
+                <div class="stat-change" style="color:var(--success);"><i class="bi bi-check-circle-fill"></i> <?= $active_shops ?> Online &middot; <?= $suspended_shops ?> Suspended</div>
             </div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card" style="--glow-color:rgba(96,165,250,0.08);">
-            <div class="stat-icon" style="background:var(--info-dim);color:var(--info);"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-card" style="--glow-color:rgba(6, 182, 212, 0.1);">
+            <div class="stat-icon" style="background:var(--cyan-glow); color:var(--cyan-neon);"><i class="bi bi-people-fill"></i></div>
             <div>
-                <div class="stat-val"><?= $total_customers ?></div>
-                <div class="stat-label">Total Customers</div>
-                <div class="stat-change" style="color:var(--muted);"><?= $total_owners ?> owners</div>
+                <div class="stat-val"><?= number_format($total_customers) ?></div>
+                <div class="stat-label">Global Userbase</div>
+                <div class="stat-change" style="color:var(--muted);"><i class="bi bi-person-badge"></i> <?= $total_owners ?> Merchant Owners</div>
             </div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card" style="--glow-color:rgba(251,191,36,0.08);">
-            <div class="stat-icon" style="background:var(--warning-dim);color:var(--warning);"><i class="bi bi-bag-fill"></i></div>
+        <div class="stat-card" style="--glow-color:rgba(245, 158, 11, 0.1);">
+            <div class="stat-icon" style="background:var(--warning-dim); color:var(--warning);"><i class="bi bi-box-seam-fill"></i></div>
             <div>
-                <div class="stat-val"><?= $total_orders ?></div>
-                <div class="stat-label">Total Orders</div>
-                <div class="stat-change" style="color:var(--warning);"><?= $pending_orders ?> pending</div>
+                <div class="stat-val"><?= number_format($total_orders) ?></div>
+                <div class="stat-label">Global Volume</div>
+                <div class="stat-change" style="color:var(--warning);"><i class="bi bi-hourglass-split"></i> <?= $pending_orders ?> Processing</div>
             </div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="stat-card" style="--glow-color:rgba(74,222,128,0.08);">
-            <div class="stat-icon" style="background:var(--success-dim);color:var(--success);"><i class="bi bi-currency-rupee"></i></div>
+        <div class="stat-card" style="--glow-color:rgba(16, 185, 129, 0.1);">
+            <div class="stat-icon" style="background:var(--success-dim); color:var(--success);"><i class="bi bi-currency-rupee"></i></div>
             <div>
-                <div class="stat-val">₹<?= number_format($total_revenue, 0) ?></div>
-                <div class="stat-label">Platform Revenue</div>
-                <div class="stat-change" style="color:var(--muted);"><?= $total_products ?> products</div>
+                <div class="stat-val">&#8377;<?= number_format($total_revenue, 0) ?></div>
+                <div class="stat-label">Network Revenue</div>
+                <div class="stat-change" style="color:var(--muted);"><i class="bi bi-tags-fill"></i> <?= number_format($total_products) ?> Live Products</div>
             </div>
         </div>
     </div>
@@ -137,33 +142,36 @@ foreach ($statuses as $st) {
         <div class="card-glass animate-in d2" style="height:100%;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
                 <div>
-                    <div class="section-title">Platform Revenue</div>
-                    <div class="section-sub">Last 14 days across all shops</div>
+                    <div class="section-title"><i class="bi bi-graph-up-arrow me-1" style="color:var(--accent-bright);"></i> Network Gross Volume</div>
+                    <div class="section-sub">Rolling 14-day aggregated throughput across all merchants</div>
                 </div>
-                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);">
-                    ₹<?= number_format(array_sum($chart_data), 0) ?>
+                <div style="text-align:right;">
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase;">14D Total</div>
+                    <div style="font-family:'Syne',sans-serif; font-weight:800; font-size:19px; color:var(--accent-bright);">
+                        &#8377;<?= number_format(array_sum($chart_data), 0) ?>
+                    </div>
                 </div>
             </div>
-            <canvas id="revenueChart" height="80"></canvas>
+            <canvas id="revenueChart" height="85"></canvas>
         </div>
     </div>
 
     <!-- Order Status Donut -->
     <div class="col-lg-4">
         <div class="card-glass animate-in d2" style="height:100%;">
-            <div class="section-title" style="margin-bottom:4px;">Order Status</div>
-            <div class="section-sub" style="margin-bottom:18px;">All time breakdown</div>
-            <canvas id="statusChart" height="160"></canvas>
+            <div class="section-title" style="margin-bottom:4px;"><i class="bi bi-pie-chart-fill me-1" style="color:var(--cyan-neon);"></i> Fulfillment Status</div>
+            <div class="section-sub" style="margin-bottom:18px;">Global order lifecycle breakdown</div>
+            <canvas id="statusChart" height="150"></canvas>
             <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
                 <?php
-                $status_colors = ['pending'=>'#fbbf24','processing'=>'#60a5fa','out_for_delivery'=>'#a855f7','delivered'=>'#4ade80','cancelled'=>'#f87171'];
+                $status_colors = ['pending'=>'#f59e0b','processing'=>'#0ea5e9','out_for_delivery'=>'#3b82f6','delivered'=>'#10b981','cancelled'=>'#ef4444'];
                 $status_labels = ['pending'=>'Pending','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
                 foreach ($status_counts as $st => $count):
                 ?>
-                <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;">
-                    <div style="width:10px;height:10px;border-radius:50%;background:<?= $status_colors[$st] ?>;flex-shrink:0;"></div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+                    <div style="width:9px;height:9px;border-radius:50%;background:<?= $status_colors[$st] ?>;flex-shrink:0;"></div>
                     <span style="color:var(--muted);flex:1;"><?= $status_labels[$st] ?></span>
-                    <span style="font-weight:700;"><?= $count ?></span>
+                    <span style="font-weight:700; font-family:'JetBrains Mono',monospace; color:#e2e8f0;"><?= number_format($count) ?></span>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -175,21 +183,21 @@ foreach ($statuses as $st) {
         <div class="card-glass animate-in d3">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
                 <div>
-                    <div class="section-title">Top Shops by Revenue</div>
-                    <div class="section-sub">All time performance</div>
+                    <div class="section-title"><i class="bi bi-trophy-fill me-1" style="color:#f59e0b;"></i> Top Performing Merchants</div>
+                    <div class="section-sub">Highest grossing stores on network</div>
                 </div>
-                <a href="shops.php" class="btn-ghost-custom" style="font-size:12px;padding:6px 12px;">View All</a>
+                <a href="shops.php" class="btn-ghost-custom" style="font-size:11.5px;padding:5px 12px;">View All</a>
             </div>
             <div style="display:flex;flex-direction:column;gap:10px;">
                 <?php $rank = 1; while ($s = $top_shops->fetch_assoc()): ?>
-                <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);">
-                    <div style="width:28px;height:28px;border-radius:8px;background:var(--accent-dim);color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">#<?= $rank++ ?></div>
+                <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(15, 23, 42, 0.5);border-radius:10px;border:1px solid rgba(59, 130, 246, 0.1);">
+                    <div style="width:30px;height:30px;border-radius:8px;background:var(--accent-glow);color:var(--accent-bright);font-family:'JetBrains Mono',monospace;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(59,130,246,0.2);">#<?= $rank++ ?></div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($s['name']) ?></div>
-                        <div style="font-size:12px;color:var(--muted);"><?= $s['orders'] ?> orders</div>
+                        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;"><?= htmlspecialchars($s['name']) ?></div>
+                        <div style="font-size:11.5px;color:var(--muted);"><?= number_format($s['orders']) ?> orders fulfilled</div>
                     </div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--success);font-size:14px;">₹<?= number_format($s['revenue'], 0) ?></div>
-                    <a href="../shop/index.php?shop=<?= $s['slug'] ?>" target="_blank" class="btn-ghost-custom" style="padding:5px 10px;font-size:12px;">
+                    <div style="font-family:'Syne',sans-serif;font-weight:800;color:var(--success);font-size:14px;">&#8377;<?= number_format($s['revenue'], 0) ?></div>
+                    <a href="../shop/index.php?shop=<?= $s['slug'] ?>" target="_blank" class="btn-ghost-custom" style="padding:5px 9px;font-size:11px;">
                         <i class="bi bi-box-arrow-up-right"></i>
                     </a>
                 </div>
@@ -203,32 +211,32 @@ foreach ($statuses as $st) {
         <div class="card-glass animate-in d3">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
                 <div>
-                    <div class="section-title">New Shops</div>
-                    <div class="section-sub">Recently registered</div>
+                    <div class="section-title"><i class="bi bi-plus-circle-fill me-1" style="color:var(--cyan-neon);"></i> Merchant Onboarding Stream</div>
+                    <div class="section-sub">Latest stores onboarded</div>
                 </div>
-                <a href="shops.php" class="btn-ghost-custom" style="font-size:12px;padding:6px 12px;">View All</a>
+                <a href="shops.php" class="btn-ghost-custom" style="font-size:11.5px;padding:5px 12px;">View All</a>
             </div>
             <div style="display:flex;flex-direction:column;gap:10px;">
                 <?php while ($s = $recent_shops->fetch_assoc()): ?>
-                <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);">
-                    <div style="width:36px;height:36px;border-radius:10px;overflow:hidden;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(15, 23, 42, 0.5);border-radius:10px;border:1px solid rgba(59, 130, 246, 0.1);">
+                    <div style="width:36px;height:36px;border-radius:8px;overflow:hidden;background:var(--accent-glow);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(59, 130, 246, 0.2);">
                         <?php if ($s['logo']): ?>
                         <img src="../assets/uploads/logos/<?= htmlspecialchars($s['logo']) ?>" style="width:100%;height:100%;object-fit:cover;">
                         <?php else: ?>
-                        <i class="bi bi-shop" style="color:var(--accent);font-size:16px;"></i>
+                        <i class="bi bi-shop" style="color:var(--accent-bright);font-size:16px;"></i>
                         <?php endif; ?>
                     </div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-weight:600;font-size:13.5px;"><?= htmlspecialchars($s['name']) ?></div>
-                        <div style="font-size:11.5px;color:var(--muted);"><?= htmlspecialchars($s['owner_name']) ?> · <?= $s['product_count'] ?> products</div>
+                        <div style="font-weight:600;font-size:13px;color:#fff;"><?= htmlspecialchars($s['name']) ?></div>
+                        <div style="font-size:11.5px;color:var(--muted);"><?= htmlspecialchars($s['owner_name']) ?> &middot; <?= $s['product_count'] ?> products</div>
                     </div>
                     <div>
                         <?php if ($s['is_suspended'] ?? 0): ?>
-                        <span class="badge-custom badge-danger"><i class="bi bi-slash-circle"></i> Suspended</span>
+                        <span class="badge-custom badge-danger"><i class="bi bi-slash-circle-fill"></i> Suspended</span>
                         <?php elseif ($s['is_active']): ?>
-                        <span class="badge-custom badge-success"><i class="bi bi-check-circle"></i> Active</span>
+                        <span class="badge-custom badge-success"><i class="bi bi-check-circle-fill"></i> Active</span>
                         <?php else: ?>
-                        <span class="badge-custom badge-warning"><i class="bi bi-pause-circle"></i> Inactive</span>
+                        <span class="badge-custom badge-warning"><i class="bi bi-pause-circle-fill"></i> Inactive</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -255,12 +263,20 @@ new Chart(document.getElementById('revenueChart'), {
         datasets: [{
             label: 'Revenue (₹)',
             data: chartRevenue,
-            borderColor: '#a855f7',
-            backgroundColor: 'rgba(168,85,247,0.1)',
+            borderColor: '#3b82f6',
+            backgroundColor: (context) => {
+                const ctx = context.chart.ctx;
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+                return gradient;
+            },
             borderWidth: 2.5,
             pointRadius: 3,
-            pointBackgroundColor: '#a855f7',
-            tension: 0.4,
+            pointBackgroundColor: '#60a5fa',
+            pointBorderColor: '#0b0f19',
+            pointBorderWidth: 2,
+            tension: 0.35,
             fill: true
         }]
     },
@@ -268,8 +284,8 @@ new Chart(document.getElementById('revenueChart'), {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-            x: { ticks: { color: '#888', maxTicksLimit: 7 }, grid: { color: 'rgba(255,255,255,0.04)' } },
-            y: { ticks: { color: '#888', callback: v => '₹' + v.toLocaleString('en-IN') }, grid: { color: 'rgba(255,255,255,0.04)' } }
+            x: { ticks: { color: '#64748b', maxTicksLimit: 7, font: { family: 'Plus Jakarta Sans', size: 11 } }, grid: { color: 'rgba(59, 130, 246, 0.06)' } },
+            y: { ticks: { color: '#64748b', callback: v => '₹' + v.toLocaleString('en-IN'), font: { family: 'Plus Jakarta Sans', size: 11 } }, grid: { color: 'rgba(59, 130, 246, 0.06)' } }
         }
     }
 });
@@ -279,11 +295,11 @@ new Chart(document.getElementById('statusChart'), {
     type: 'doughnut',
     data: {
         labels: statusLabels,
-        datasets: [{ data: statusValues, backgroundColor: statusColors, borderWidth: 2, borderColor: '#0d0b0e' }]
+        datasets: [{ data: statusValues, backgroundColor: statusColors, borderWidth: 3, borderColor: '#0f172a' }]
     },
     options: {
         responsive: true,
-        cutout: '72%',
+        cutout: '74%',
         plugins: { legend: { display: false } }
     }
 });
