@@ -3,7 +3,7 @@ session_start();
 require '../config/db.php';
 // ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Customers';
-$page_subtitle = 'All registered customers in your shop';
+$page_subtitle = 'Registered customer directory and purchase metrics';
 
 require 'includes/sidebar.php';
 
@@ -31,87 +31,84 @@ $avg_spend       = $total_customers > 0 ? round($total_revenue / $total_customer
 ?>
 
 <!-- Stats -->
-<div class="row g-3 animate-in" style="margin-bottom:24px;">
-    <div class="col-6 col-lg-3">
-        <div class="stat-card-small">
-            <div class="stat-icon-sm" style="background:var(--info-dim);color:var(--info);"><i class="bi bi-people-fill"></i></div>
-            <div>
-                <div class="stat-val-sm"><?= $total_customers ?></div>
-                <div class="stat-lbl-sm">Total Customers</div>
-            </div>
+<div class="row g-3 animate-in mb-3">
+    <div class="col-6 col-lg-4">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#F0F9FF;color:#0EA5E9;"><i class="bi bi-people"></i></div>
+            <div class="stat-value"><?= number_format($total_customers) ?></div>
+            <div class="stat-label">Total Customer Accounts</div>
         </div>
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="stat-card-small">
-            <div class="stat-icon-sm" style="background:var(--success-dim);color:var(--success);"><i class="bi bi-currency-rupee"></i></div>
-            <div>
-                <div class="stat-val-sm">₹<?= number_format($total_revenue,0) ?></div>
-                <div class="stat-lbl-sm">Total Revenue</div>
-            </div>
+    <div class="col-6 col-lg-4">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#ECFDF5;color:#10B981;"><i class="bi bi-currency-rupee"></i></div>
+            <div class="stat-value">&#8377;<?= number_format($total_revenue, 0) ?></div>
+            <div class="stat-label">Total Customer Spend</div>
         </div>
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="stat-card-small">
-            <div class="stat-icon-sm" style="background:var(--accent-dim);color:var(--accent);"><i class="bi bi-graph-up"></i></div>
-            <div>
-                <div class="stat-val-sm">₹<?= number_format($avg_spend,0) ?></div>
-                <div class="stat-lbl-sm">Avg. Spend / Customer</div>
-            </div>
+    <div class="col-6 col-lg-4">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#EFF6FF;color:#2563EB;"><i class="bi bi-graph-up"></i></div>
+            <div class="stat-value">&#8377;<?= number_format($avg_spend, 0) ?></div>
+            <div class="stat-label">Average Spend / Customer</div>
         </div>
     </div>
 </div>
 
 <!-- Search -->
-<div class="card-glass animate-in d1" style="margin-bottom:20px;">
+<div class="card-glass animate-in d1" style="margin-bottom:16px;">
     <form method="GET" style="display:flex;gap:10px;align-items:center;">
         <div style="position:relative;flex:1;">
-            <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;"></i>
-            <input type="text" name="q" class="input-custom" placeholder="Search by name, email or phone..."
+            <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;"></i>
+            <input type="text" name="q" class="input-custom" placeholder="Search customer by name, email or phone number..."
                 value="<?= htmlspecialchars($search) ?>" style="padding-left:36px;">
         </div>
         <button type="submit" class="btn-primary-custom"><i class="bi bi-search"></i> Search</button>
-        <?php if ($search): ?><a href="customers.php" class="btn-ghost-custom"><i class="bi bi-x"></i> Clear</a><?php endif; ?>
+        <?php if ($search): ?><a href="customers.php" class="btn-ghost-custom">Clear</a><?php endif; ?>
     </form>
 </div>
 
 <!-- Table -->
 <div class="card-glass animate-in d2" style="padding:0;overflow:hidden;">
-    <table style="width:100%;border-collapse:collapse;">
+    <table class="table-glass">
         <thead>
             <tr>
-                <?php foreach (['Customer','Contact','Orders','Total Spent','Last Order','Joined'] as $h): ?>
-                <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted2);padding:12px 16px;border-bottom:1px solid var(--card-border);text-align:left;white-space:nowrap;"><?= $h ?></th>
-                <?php endforeach; ?>
+                <th style="padding-left:20px;">Customer</th>
+                <th>Contact Details</th>
+                <th>Orders</th>
+                <th>Total Spent</th>
+                <th>Last Order</th>
+                <th style="padding-right:20px;">Joined</th>
             </tr>
         </thead>
         <tbody>
         <?php if ($customers->num_rows === 0): ?>
-        <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted);">No customers found.</td></tr>
+        <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--text-muted);">No customers found matching criteria.</td></tr>
         <?php endif; ?>
         <?php while ($c = $customers->fetch_assoc()): ?>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-            <td style="padding:14px 16px;">
+        <tr>
+            <td style="padding-left:20px;">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;border-radius:10px;background:var(--info-dim);color:var(--info);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;flex-shrink:0;">
+                    <div style="width:34px;height:34px;border-radius:6px;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;border:1px solid #BFDBFE;">
                         <?= strtoupper(substr($c['name'],0,1)) ?>
                     </div>
-                    <div style="font-weight:600;font-size:13.5px;"><?= htmlspecialchars($c['name']) ?></div>
+                    <div style="font-weight:600;font-size:13.5px;color:var(--text-primary);"><?= htmlspecialchars($c['name']) ?></div>
                 </div>
             </td>
-            <td style="padding:14px 16px;">
-                <div style="font-size:13px;"><?= htmlspecialchars($c['email']) ?></div>
-                <?php if ($c['phone']): ?><div style="font-size:12px;color:var(--muted);margin-top:2px;"><?= htmlspecialchars($c['phone']) ?></div><?php endif; ?>
+            <td>
+                <div style="font-size:13px;color:var(--text-primary);"><?= htmlspecialchars($c['email']) ?></div>
+                <?php if ($c['phone']): ?><div style="font-size:12px;color:var(--text-muted);margin-top:1px;"><?= htmlspecialchars($c['phone']) ?></div><?php endif; ?>
             </td>
-            <td style="padding:14px 16px;">
-                <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;"><?= $c['total_orders'] ?></span>
+            <td>
+                <span style="font-weight:700;font-size:14px;color:var(--text-primary);"><?= $c['total_orders'] ?></span>
             </td>
-            <td style="padding:14px 16px;">
-                <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--success);">₹<?= number_format($c['total_spent'],0) ?></span>
+            <td>
+                <span style="font-weight:700;color:var(--success-text);">&#8377;<?= number_format($c['total_spent'], 2) ?></span>
             </td>
-            <td style="padding:14px 16px;font-size:12.5px;color:var(--muted);">
-                <?= $c['last_order_at'] ? date('d M Y', strtotime($c['last_order_at'])) : '—' ?>
+            <td style="font-size:12.5px;color:var(--text-muted);">
+                <?= $c['last_order_at'] ? date('d M Y', strtotime($c['last_order_at'])) : '&mdash;' ?>
             </td>
-            <td style="padding:14px 16px;font-size:12.5px;color:var(--muted);">
+            <td style="padding-right:20px;font-size:12.5px;color:var(--text-muted);">
                 <?= date('d M Y', strtotime($c['created_at'])) ?>
             </td>
         </tr>
@@ -119,12 +116,5 @@ $avg_spend       = $total_customers > 0 ? round($total_revenue / $total_customer
         </tbody>
     </table>
 </div>
-
-<style>
-.stat-card-small{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:18px;display:flex;align-items:center;gap:14px;}
-.stat-icon-sm{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
-.stat-val-sm{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1;}
-.stat-lbl-sm{font-size:12px;color:var(--muted);margin-top:4px;}
-</style>
 
 <?php require 'includes/footer.php'; ?>

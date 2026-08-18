@@ -82,8 +82,8 @@ $categories = $conn->query("
 <div class="card-glass animate-in">
     <div class="empty-state">
         <i class="bi bi-tags"></i>
-        <h4>No Categories Yet</h4>
-        <p>Create your first category to start organising your products.</p>
+        <h4>No Categories Created</h4>
+        <p>Create your first category to organize your product catalog.</p>
         <button class="btn-primary-custom" style="margin-top:16px;" onclick="openModal('addCatModal')">
             <i class="bi bi-plus-lg"></i> Add First Category
         </button>
@@ -97,36 +97,36 @@ $categories = $conn->query("
     <div class="col-sm-6 col-lg-4 col-xl-3">
         <div class="card-glass" style="position:relative;overflow:hidden;">
             <!-- Banner image -->
-            <div style="height:90px;margin:-24px -24px 16px;background:var(--card-bg);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="height:90px;margin:-20px -20px 14px;background:#F1F5F9;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;border-bottom:1px solid #E2E8F0;">
                 <?php if ($cat['image']): ?>
                 <img src="../assets/uploads/products/<?= htmlspecialchars($cat['image']) ?>" style="width:100%;height:100%;object-fit:cover;">
-                <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent,rgba(14,12,9,0.7));"></div>
+                <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent,rgba(15,23,42,0.4));"></div>
                 <?php else: ?>
-                <i class="bi bi-image" style="font-size:32px;color:rgba(200,169,126,0.25);"></i>
+                <i class="bi bi-image" style="font-size:32px;color:#94A3B8;"></i>
                 <?php endif; ?>
                 <span class="status-pill <?= $cat['is_active'] ? 'pill-active' : 'pill-inactive' ?>" style="position:absolute;bottom:8px;right:10px;">
                     <?= $cat['is_active'] ? 'Active' : 'Hidden' ?>
                 </span>
             </div>
 
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:4px;"><?= htmlspecialchars($cat['name']) ?></div>
-            <div style="font-size:13px;color:var(--muted);">
+            <div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:2px;"><?= htmlspecialchars($cat['name']) ?></div>
+            <div style="font-size:12.5px;color:var(--text-muted);">
                 <i class="bi bi-box-seam" style="margin-right:4px;"></i><?= $cat['product_count'] ?> product<?= $cat['product_count'] != 1 ? 's' : '' ?>
             </div>
 
-            <div style="display:flex;gap:8px;margin-top:16px;">
-                <button class="btn-ghost-custom" style="flex:1;justify-content:center;font-size:12.5px;"
+            <div style="display:flex;gap:6px;margin-top:14px;">
+                <button class="btn-ghost-custom" style="flex:1;justify-content:center;font-size:12px;padding:6px 10px;"
                     onclick="openEditCat(<?= htmlspecialchars(json_encode($cat)) ?>)">
                     <i class="bi bi-pencil"></i> Edit
                 </button>
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="action" value="toggle">
                     <input type="hidden" name="cat_id" value="<?= $cat['id'] ?>">
-                    <button type="submit" class="btn-ghost-custom" style="padding:8px 12px;" title="Toggle">
+                    <button type="submit" class="btn-ghost-custom" style="padding:6px 10px;font-size:12px;" title="Toggle Visibility">
                         <i class="bi bi-<?= $cat['is_active'] ? 'eye-slash' : 'eye' ?>"></i>
                     </button>
                 </form>
-                <button class="btn-danger-custom" style="padding:8px 12px;"
+                <button class="btn-danger-custom" style="padding:6px 10px;font-size:12px;"
                     onclick="confirmDeleteCat(<?= $cat['id'] ?>, '<?= htmlspecialchars(addslashes($cat['name'])) ?>', <?= $cat['product_count'] ?>)">
                     <i class="bi bi-trash3"></i>
                 </button>
@@ -142,7 +142,7 @@ $categories = $conn->query("
 <div class="modal-backdrop-custom" id="addCatModal">
     <div class="modal-box" style="max-width:440px;">
         <div class="modal-header">
-            <div class="modal-title"><i class="bi bi-tags" style="color:var(--accent);margin-right:8px;"></i>Add Category</div>
+            <div class="modal-title"><i class="bi bi-tags-fill" style="color:var(--primary);margin-right:6px;"></i>Add Category</div>
             <button class="modal-close" onclick="closeModal('addCatModal')"><i class="bi bi-x-lg"></i></button>
         </div>
         <form method="POST" enctype="multipart/form-data">
@@ -150,21 +150,21 @@ $categories = $conn->query("
             <div style="display:grid;gap:14px;">
                 <div>
                     <div class="form-label-custom">Category Name *</div>
-                    <input type="text" name="name" class="input-custom" placeholder="e.g. Cakes, Breads, Pastries" required>
+                    <input type="text" name="name" class="input-custom" placeholder="e.g. Beverages, Snacks, Personal Care" required>
                 </div>
                 <div>
                     <div class="form-label-custom">Banner Image (optional)</div>
                     <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewCatImg(this,'addCatPreview')">
-                    <img id="addCatPreview" style="margin-top:10px;max-height:80px;border-radius:8px;display:none;">
+                    <img id="addCatPreview" style="margin-top:10px;max-height:80px;border-radius:6px;display:none;object-fit:cover;border:1px solid #CBD5E1;">
                 </div>
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                    <input type="checkbox" name="is_active" value="1" checked style="accent-color:var(--accent);width:16px;height:16px;">
-                    <span style="font-size:13.5px;">Show this category in shop</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                    <input type="checkbox" name="is_active" value="1" checked style="accent-color:var(--primary);width:16px;height:16px;">
+                    <span style="font-size:13px;font-weight:500;">Show this category in storefront</span>
                 </label>
             </div>
             <div style="display:flex;gap:10px;margin-top:20px;">
-                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;">
-                    <i class="bi bi-plus-lg"></i> Add Category
+                <button type="submit" class="btn-orange-custom" style="flex:1;justify-content:center;">
+                    <i class="bi bi-plus-lg"></i> Save Category
                 </button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('addCatModal')">Cancel</button>
             </div>
@@ -176,7 +176,7 @@ $categories = $conn->query("
 <div class="modal-backdrop-custom" id="editCatModal">
     <div class="modal-box" style="max-width:440px;">
         <div class="modal-header">
-            <div class="modal-title"><i class="bi bi-pencil-square" style="color:var(--accent);margin-right:8px;"></i>Edit Category</div>
+            <div class="modal-title"><i class="bi bi-pencil-square" style="color:var(--primary);margin-right:6px;"></i>Edit Category</div>
             <button class="modal-close" onclick="closeModal('editCatModal')"><i class="bi bi-x-lg"></i></button>
         </div>
         <form method="POST" enctype="multipart/form-data">
@@ -191,15 +191,15 @@ $categories = $conn->query("
                 <div>
                     <div class="form-label-custom">Replace Banner Image</div>
                     <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewCatImg(this,'editCatPreview')">
-                    <img id="editCatPreview" style="margin-top:10px;max-height:80px;border-radius:8px;display:none;">
+                    <img id="editCatPreview" style="margin-top:10px;max-height:80px;border-radius:6px;display:none;object-fit:cover;border:1px solid #CBD5E1;">
                 </div>
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                    <input type="checkbox" name="is_active" value="1" id="edit_cat_active" style="accent-color:var(--accent);width:16px;height:16px;">
-                    <span style="font-size:13.5px;">Show in shop</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                    <input type="checkbox" name="is_active" value="1" id="edit_cat_active" style="accent-color:var(--primary);width:16px;height:16px;">
+                    <span style="font-size:13px;font-weight:500;">Show in storefront</span>
                 </label>
             </div>
             <div style="display:flex;gap:10px;margin-top:20px;">
-                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;"><i class="bi bi-check-lg"></i> Save</button>
+                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;"><i class="bi bi-check-lg"></i> Save Changes</button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('editCatModal')">Cancel</button>
             </div>
         </form>
@@ -209,18 +209,18 @@ $categories = $conn->query("
 <!-- ── Delete Modal ── -->
 <div class="modal-backdrop-custom" id="deleteCatModal">
     <div class="modal-box" style="max-width:380px;">
-        <div style="text-align:center;padding:8px 0 20px;">
-            <div style="width:54px;height:54px;background:var(--danger-dim);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--danger);margin:0 auto 14px;">
+        <div style="text-align:center;padding:8px 0 16px;">
+            <div style="width:48px;height:48px;background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--danger-text);margin:0 auto 12px;">
                 <i class="bi bi-trash3"></i>
             </div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:8px;">Delete Category?</div>
-            <div id="deleteCatName" style="font-size:13.5px;color:var(--muted);"></div>
+            <div style="font-weight:700;font-size:17px;color:var(--text-primary);margin-bottom:6px;">Delete Category?</div>
+            <div id="deleteCatName" style="font-size:13px;color:var(--text-muted);"></div>
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="cat_id" id="deleteCatId">
             <div style="display:flex;gap:10px;">
-                <button type="submit" class="btn-danger-custom" style="flex:1;justify-content:center;padding:12px;">Delete</button>
+                <button type="submit" class="btn-danger-custom" style="flex:1;justify-content:center;padding:10px;">Delete</button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('deleteCatModal')" style="flex:1;justify-content:center;">Cancel</button>
             </div>
         </form>
@@ -243,8 +243,8 @@ function openEditCat(c) {
 function confirmDeleteCat(id, name, count) {
     document.getElementById("deleteCatId").value = id;
     document.getElementById("deleteCatName").textContent = count > 0
-        ? `"${name}" has ${count} product(s). Please move them first.`
-        : `"${name}" will be permanently deleted.`;
+        ? `"${name}" contains ${count} product(s). Please reassign or delete them first.`
+        : `"${name}" will be permanently removed.`;
     openModal("deleteCatModal");
 }
 function previewCatImg(input, id) {

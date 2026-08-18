@@ -80,10 +80,10 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
 <?php endif; ?>
 
 <!-- Info Banner -->
-<div class="animate-in" style="background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.18);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-    <i class="bi bi-info-circle-fill" style="color:var(--info);font-size:18px;flex-shrink:0;"></i>
-    <div style="font-size:13.5px;color:rgba(240,236,228,0.7);">
-        Only <strong style="color:var(--text);">one active popup</strong> is shown per customer visit. The most recently activated popup takes priority. Schedule popups using start/end dates for timed campaigns.
+<div class="animate-in mb-3" style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:12px;">
+    <i class="bi bi-info-circle-fill" style="color:#0EA5E9;font-size:18px;flex-shrink:0;"></i>
+    <div style="font-size:12.5px;color:#0369A1;">
+        Only <strong>one active popup</strong> is displayed per customer visit. The most recently activated popup takes priority. Schedule campaigns using start/end dates.
     </div>
 </div>
 
@@ -91,9 +91,9 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
 <div class="card-glass animate-in d1">
     <div class="empty-state">
         <i class="bi bi-megaphone"></i>
-        <h4>No Popups Yet</h4>
-        <p>Create your first promotional popup to engage customers.</p>
-        <button class="btn-primary-custom" style="margin-top:16px;" onclick="openModal('addPopupModal')">
+        <h4>No Promotional Popups</h4>
+        <p>Create a promotional popup offer to engage visitors on your storefront.</p>
+        <button class="btn-orange-custom" style="margin-top:16px;" onclick="openModal('addPopupModal')">
             <i class="bi bi-plus-lg"></i> Create First Popup
         </button>
     </div>
@@ -107,57 +107,56 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
         $is_live = $popup['is_active'] && (!$is_scheduled || ($now >= $popup['start_date'] && $now <= $popup['end_date']));
     ?>
     <div class="col-md-6 col-xl-4">
-        <div class="card-glass" style="position:relative;overflow:hidden;">
-            <!-- Status glow bar -->
-            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:<?= $is_live ? 'var(--success)' : ($popup['is_active'] ? 'var(--warning)' : 'rgba(255,255,255,0.08)') ?>;"></div>
+        <div class="card-glass" style="position:relative;overflow:hidden;display:flex;flex-direction:column;height:100%;">
+            <!-- Status top line -->
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:<?= $is_live ? 'var(--success)' : ($popup['is_active'] ? 'var(--warning)' : '#CBD5E1') ?>;"></div>
 
             <!-- Preview image -->
             <?php if ($popup['image']): ?>
-            <div style="height:110px;margin:-24px -24px 16px;overflow:hidden;position:relative;">
+            <div style="height:110px;margin:-20px -20px 14px;overflow:hidden;position:relative;background:#F1F5F9;border-bottom:1px solid #E2E8F0;">
                 <img src="../assets/uploads/popups/<?= htmlspecialchars($popup['image']) ?>" style="width:100%;height:100%;object-fit:cover;">
-                <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(14,12,9,0.85));"></div>
             </div>
             <?php endif; ?>
 
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">
-                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;"><?= htmlspecialchars($popup['title']) ?></div>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;">
+                <div style="font-weight:700;font-size:15px;color:var(--text-primary);"><?= htmlspecialchars($popup['title']) ?></div>
                 <span class="status-pill <?= $is_live ? 'pill-active' : ($popup['is_active'] ? 'pill-pending' : 'pill-inactive') ?>" style="flex-shrink:0;">
                     <?= $is_live ? 'Live' : ($popup['is_active'] ? 'Scheduled' : 'Inactive') ?>
                 </span>
             </div>
 
             <?php if ($popup['message']): ?>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+            <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:10px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
                 <?= htmlspecialchars($popup['message']) ?>
             </p>
             <?php endif; ?>
 
             <?php if ($popup['button_text']): ?>
-            <div style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);color:var(--accent);padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;margin-bottom:12px;">
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE;padding:3px 10px;border-radius:4px;font-size:11.5px;font-weight:600;margin-bottom:10px;width:fit-content;">
                 <i class="bi bi-cursor"></i> <?= htmlspecialchars($popup['button_text']) ?>
             </div>
             <?php endif; ?>
 
             <?php if ($is_scheduled): ?>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+            <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;">
                 <i class="bi bi-calendar3 me-1"></i>
                 <?= date('M j', strtotime($popup['start_date'])) ?> &ndash; <?= date('M j, Y', strtotime($popup['end_date'])) ?>
             </div>
             <?php endif; ?>
 
-            <div style="display:flex;gap:8px;margin-top:auto;">
-                <button class="btn-ghost-custom" style="flex:1;justify-content:center;font-size:12.5px;"
+            <div style="display:flex;gap:6px;margin-top:auto;padding-top:10px;">
+                <button class="btn-ghost-custom" style="flex:1;justify-content:center;font-size:12px;padding:6px 10px;"
                     onclick="openEditPopup(<?= htmlspecialchars(json_encode($popup)) ?>)">
                     <i class="bi bi-pencil"></i> Edit
                 </button>
                 <form method="POST" style="display:inline;">
                     <input type="hidden" name="action" value="toggle">
                     <input type="hidden" name="popup_id" value="<?= $popup['id'] ?>">
-                    <button type="submit" class="btn-ghost-custom" style="padding:8px 12px;" title="Toggle">
+                    <button type="submit" class="btn-ghost-custom" style="padding:6px 10px;font-size:12px;" title="Toggle Active">
                         <i class="bi bi-<?= $popup['is_active'] ? 'pause-circle' : 'play-circle' ?>"></i>
                     </button>
                 </form>
-                <button class="btn-danger-custom" style="padding:8px 12px;"
+                <button class="btn-danger-custom" style="padding:6px 10px;font-size:12px;"
                     onclick="confirmDeletePopup(<?= $popup['id'] ?>,'<?= htmlspecialchars(addslashes($popup['title'])) ?>')">
                     <i class="bi bi-trash3"></i>
                 </button>
@@ -173,7 +172,7 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
 <div class="modal-backdrop-custom" id="addPopupModal">
     <div class="modal-box" style="max-width:540px;">
         <div class="modal-header">
-            <div class="modal-title"><i class="bi bi-megaphone" style="color:var(--accent);margin-right:8px;"></i>Create Popup</div>
+            <div class="modal-title"><i class="bi bi-megaphone-fill" style="color:var(--primary);margin-right:6px;"></i>Create Storefront Popup</div>
             <button class="modal-close" onclick="closeModal('addPopupModal')"><i class="bi bi-x-lg"></i></button>
         </div>
         <form method="POST" enctype="multipart/form-data">
@@ -181,26 +180,26 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
             <div style="display:grid;gap:14px;">
                 <div>
                     <div class="form-label-custom">Popup Title *</div>
-                    <input type="text" name="title" class="input-custom" placeholder="e.g. Weekend Special Offer!" required>
+                    <input type="text" name="title" class="input-custom" placeholder="e.g. Festival Special: Flat 20% OFF!" required>
                 </div>
                 <div>
-                    <div class="form-label-custom">Message</div>
-                    <textarea name="message" class="input-custom" placeholder="Tell customers about your offer..." style="min-height:80px;"></textarea>
+                    <div class="form-label-custom">Message Content</div>
+                    <textarea name="message" class="input-custom" placeholder="Detailed offer announcement text..." style="min-height:75px;"></textarea>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
-                        <div class="form-label-custom">Button Text</div>
-                        <input type="text" name="button_text" class="input-custom" placeholder="e.g. Shop Now">
+                        <div class="form-label-custom">Action Button Text</div>
+                        <input type="text" name="button_text" class="input-custom" placeholder="e.g. Claim Offer">
                     </div>
                     <div>
-                        <div class="form-label-custom">Button Link</div>
+                        <div class="form-label-custom">Action Button Link</div>
                         <input type="text" name="button_link" class="input-custom" placeholder="/shop/products">
                     </div>
                 </div>
                 <div>
-                    <div class="form-label-custom">Popup Image (optional)</div>
+                    <div class="form-label-custom">Popup Banner Image (optional)</div>
                     <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewPopupImg(this,'addPopPreview')">
-                    <img id="addPopPreview" style="margin-top:10px;max-height:80px;border-radius:8px;display:none;">
+                    <img id="addPopPreview" style="margin-top:10px;max-height:80px;border-radius:6px;display:none;object-fit:cover;border:1px solid #CBD5E1;">
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
@@ -212,14 +211,14 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
                         <input type="date" name="end_date" class="input-custom">
                     </div>
                 </div>
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                    <input type="checkbox" name="is_active" value="1" checked style="accent-color:var(--accent);width:16px;height:16px;">
-                    <span style="font-size:13.5px;">Activate this popup now</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                    <input type="checkbox" name="is_active" value="1" checked style="accent-color:var(--primary);width:16px;height:16px;">
+                    <span style="font-size:13px;font-weight:500;">Activate this popup campaign immediately</span>
                 </label>
             </div>
             <div style="display:flex;gap:10px;margin-top:20px;">
-                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;">
-                    <i class="bi bi-megaphone"></i> Create Popup
+                <button type="submit" class="btn-orange-custom" style="flex:1;justify-content:center;">
+                    <i class="bi bi-megaphone"></i> Launch Popup Campaign
                 </button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('addPopupModal')">Cancel</button>
             </div>
@@ -231,7 +230,7 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
 <div class="modal-backdrop-custom" id="editPopupModal">
     <div class="modal-box" style="max-width:540px;">
         <div class="modal-header">
-            <div class="modal-title"><i class="bi bi-pencil-square" style="color:var(--accent);margin-right:8px;"></i>Edit Popup</div>
+            <div class="modal-title"><i class="bi bi-pencil-square" style="color:var(--primary);margin-right:6px;"></i>Edit Popup Campaign</div>
             <button class="modal-close" onclick="closeModal('editPopupModal')"><i class="bi bi-x-lg"></i></button>
         </div>
         <form method="POST" enctype="multipart/form-data">
@@ -244,23 +243,23 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
                     <input type="text" name="title" id="ep_title" class="input-custom" required>
                 </div>
                 <div>
-                    <div class="form-label-custom">Message</div>
-                    <textarea name="message" id="ep_msg" class="input-custom" style="min-height:80px;"></textarea>
+                    <div class="form-label-custom">Message Content</div>
+                    <textarea name="message" id="ep_msg" class="input-custom" style="min-height:75px;"></textarea>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
-                        <div class="form-label-custom">Button Text</div>
+                        <div class="form-label-custom">Action Button Text</div>
                         <input type="text" name="button_text" id="ep_btxt" class="input-custom">
                     </div>
                     <div>
-                        <div class="form-label-custom">Button Link</div>
+                        <div class="form-label-custom">Action Button Link</div>
                         <input type="text" name="button_link" id="ep_blink" class="input-custom">
                     </div>
                 </div>
                 <div>
                     <div class="form-label-custom">Replace Image</div>
                     <input type="file" name="image" class="input-custom" accept="image/*" onchange="previewPopupImg(this,'editPopPreview')">
-                    <img id="editPopPreview" style="margin-top:10px;max-height:80px;border-radius:8px;display:none;">
+                    <img id="editPopPreview" style="margin-top:10px;max-height:80px;border-radius:6px;display:none;object-fit:cover;border:1px solid #CBD5E1;">
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
@@ -272,13 +271,13 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
                         <input type="date" name="end_date" id="ep_end" class="input-custom">
                     </div>
                 </div>
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                    <input type="checkbox" name="is_active" value="1" id="ep_active" style="accent-color:var(--accent);width:16px;height:16px;">
-                    <span style="font-size:13.5px;">Active</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                    <input type="checkbox" name="is_active" value="1" id="ep_active" style="accent-color:var(--primary);width:16px;height:16px;">
+                    <span style="font-size:13px;font-weight:500;">Campaign active</span>
                 </label>
             </div>
             <div style="display:flex;gap:10px;margin-top:20px;">
-                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;"><i class="bi bi-check-lg"></i> Save</button>
+                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;"><i class="bi bi-check-lg"></i> Save Changes</button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('editPopupModal')">Cancel</button>
             </div>
         </form>
@@ -288,16 +287,16 @@ $popups = $conn->query("SELECT * FROM popups WHERE shop_id=$shop_id ORDER BY cre
 <!-- ── Delete Modal ── -->
 <div class="modal-backdrop-custom" id="deletePopupModal">
     <div class="modal-box" style="max-width:380px;">
-        <div style="text-align:center;padding:8px 0 20px;">
-            <div style="width:54px;height:54px;background:var(--danger-dim);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--danger);margin:0 auto 14px;"><i class="bi bi-trash3"></i></div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:8px;">Delete Popup?</div>
-            <div id="deletePopupName" style="font-size:13.5px;color:var(--muted);"></div>
+        <div style="text-align:center;padding:8px 0 16px;">
+            <div style="width:48px;height:48px;background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--danger-text);margin:0 auto 12px;"><i class="bi bi-trash3"></i></div>
+            <div style="font-weight:700;font-size:17px;color:var(--text-primary);margin-bottom:6px;">Delete Popup?</div>
+            <div id="deletePopupName" style="font-size:13px;color:var(--text-muted);"></div>
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="popup_id" id="deletePopupId">
             <div style="display:flex;gap:10px;">
-                <button type="submit" class="btn-danger-custom" style="flex:1;justify-content:center;padding:12px;">Delete</button>
+                <button type="submit" class="btn-danger-custom" style="flex:1;justify-content:center;padding:10px;">Delete</button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('deletePopupModal')" style="flex:1;justify-content:center;">Cancel</button>
             </div>
         </form>
@@ -324,7 +323,7 @@ function openEditPopup(p) {
 }
 function confirmDeletePopup(id, title) {
     document.getElementById("deletePopupId").value = id;
-    document.getElementById("deletePopupName").textContent = `"${title}" will be permanently deleted.`;
+    document.getElementById("deletePopupName").textContent = `"${title}" will be permanently removed.`;
     openModal("deletePopupModal");
 }
 function previewPopupImg(input, id) {

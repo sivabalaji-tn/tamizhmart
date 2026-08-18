@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+// ── This script is made by Siva Balaji sms ──────────────────────
 if (isset($_SESSION['owner_id'])) {
     header("Location: dashboard.php");
     exit;
@@ -30,17 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['owner_id']   = $owner['id'];
         $_SESSION['owner_name'] = $owner['name'];
         $_SESSION['shop_id']    = $owner['shop_id'];
-        // Redirect to setup wizard if not completed
+        
         $sid = $owner['shop_id'];
         if (!$sid) {
-            // No shop created yet — go to register
             header("Location: register.php");
             exit;
         }
         $setup = $conn->query("SELECT setting_value FROM shop_settings WHERE shop_id=$sid AND setting_key='setup_complete'")->fetch_assoc();
 
         // ── Check subscription status ─────────────────────────
-        // Safe subscription check
         $sub = null;
         if ($sid) {
             $sub_st = $conn->prepare("SELECT ss.*, p.name AS plan_name FROM shop_subscriptions ss JOIN plans p ON ss.plan_id=p.id WHERE ss.shop_id=? ORDER BY ss.id DESC LIMIT 1");
@@ -54,19 +52,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $grace_end = strtotime($sub['grace_until'] ?? $sub['expires_at']);
 
             if ($sub['status'] === 'suspended') {
-                // Hard suspended by admin
                 session_destroy();
                 header("Location: login.php?err=suspended");
                 exit;
             } elseif ($sub['status'] === 'active' || $sub['status'] === 'trial') {
                 if ($now > $expires) {
-                    // Expired — move to grace
                     $conn->query("UPDATE shop_subscriptions SET status='grace' WHERE id={$sub['id']}");
                     $_SESSION['sub_warning'] = 'Your subscription expired. You have until ' . date('d M Y', $grace_end) . ' to renew.';
                 }
             } elseif ($sub['status'] === 'grace') {
                 if ($now > $grace_end) {
-                    // Grace ended — suspend
                     $conn->query("UPDATE shop_subscriptions SET status='suspended' WHERE id={$sub['id']}");
                     $conn->query("UPDATE shops SET is_suspended=1 WHERE id=$sid");
                     session_destroy();
@@ -74,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 } else {
                     $days_left = ceil(($grace_end - $now) / 86400);
-                    $_SESSION['sub_warning'] = "⚠️ Grace period: $days_left day(s) left. Contact admin to renew.";
+                    $_SESSION['sub_warning'] = "Grace period: $days_left day(s) left. Contact admin to renew.";
                 }
             }
         }
@@ -95,270 +90,205 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owner Login &mdash; TamizhMart</title>
+    <title>Seller Console Login &mdash; TamizhMart</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --glass: rgba(255,255,255,0.07);
-            --glass-border: rgba(255,255,255,0.12);
-            --accent: #c8a97e;
-            --accent2: #e8d5b7;
-            --text: #f0ece4;
-            --muted: rgba(240,236,228,0.5);
-            --input-bg: rgba(255,255,255,0.06);
-            --input-border: rgba(255,255,255,0.12);
-            --error: #f87171;
+            --body-bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --card-border: #E2E8F0;
+            --navy-blue: #1E293B;
+            --text-primary: #1E293B;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --primary-blue: #2563EB;
+            --primary-blue-hover: #1D4ED8;
+            --danger-red: #DC2626;
+            --danger-bg: #FEF2F2;
+            --danger-border: #FECACA;
+            --radius: 10px;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
         }
 
         html, body {
             min-height: 100vh;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            color: var(--text-primary);
+            background: var(--body-bg);
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
-            background: #0d0b08;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 24px;
-            position: relative;
-            overflow: hidden;
         }
 
-        /* Background */
-        .bg-mesh {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            background:
-                radial-gradient(ellipse 70% 70% at 15% 20%, rgba(180,130,70,0.18) 0%, transparent 55%),
-                radial-gradient(ellipse 60% 60% at 85% 80%, rgba(100,60,20,0.22) 0%, transparent 55%),
-                #0d0b08;
-        }
-        .grain {
-            position: fixed; inset: 0; z-index: 1;
-            opacity: 0.03; pointer-events: none;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-            background-size: 180px;
-        }
-
-        /* Decorative lines */
-        .deco-lines {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .deco-lines::before, .deco-lines::after {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            border: 1px solid rgba(200,169,126,0.07);
-        }
-        .deco-lines::before {
-            width: 700px; height: 700px;
-            top: -200px; left: -200px;
-        }
-        .deco-lines::after {
-            width: 500px; height: 500px;
-            bottom: -150px; right: -150px;
-        }
-
-        /* Card */
         .login-wrap {
-            position: relative;
-            z-index: 2;
             width: 100%;
-            max-width: 460px;
+            max-width: 440px;
         }
 
-        .brand-mark {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 40px;
+        .brand-header {
+            text-align: center;
+            margin-bottom: 28px;
         }
-        .brand-icon {
-            width: 44px; height: 44px;
-            background: linear-gradient(135deg, var(--accent), #8b6840);
-            border-radius: 13px;
-            display: flex;
+
+        .brand-icon-box {
+            width: 48px; height: 48px;
+            background: var(--navy-blue);
+            border-radius: 10px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 22px;
-            color: #fff;
-            box-shadow: 0 8px 24px rgba(200,169,126,0.3);
+            color: #FFFFFF;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
         }
-        .brand-name {
-            font-family: 'Syne', sans-serif;
+
+        .brand-title {
             font-weight: 800;
-            font-size: 24px;
-            letter-spacing: -0.5px;
+            font-size: 22px;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+        .brand-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
-        .glass-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 24px;
-            padding: 44px 40px;
-            box-shadow:
-                0 32px 80px rgba(0,0,0,0.5),
-                0 0 0 0.5px rgba(255,255,255,0.05) inset,
-                0 1px 0 rgba(255,255,255,0.1) inset;
-        }
-
-        /* Shine effect on card */
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(200,169,126,0.4), transparent);
-            border-radius: 24px 24px 0 0;
+        .card-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 32px 28px;
+            box-shadow: var(--shadow-card);
         }
 
         .form-heading {
-            font-family: 'Syne', sans-serif;
             font-weight: 700;
-            font-size: 26px;
-            letter-spacing: -0.8px;
-            margin-bottom: 6px;
-            text-align: center;
+            font-size: 18px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
         }
         .form-sub {
-            font-size: 14px;
-            color: var(--muted);
-            text-align: center;
-            margin-bottom: 32px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .form-group-custom {
+            margin-bottom: 16px;
+        }
+
+        .form-label-custom {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: block;
         }
 
         .input-wrap {
             position: relative;
-            margin-bottom: 14px;
         }
+
         .input-icon {
             position: absolute;
-            left: 16px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--muted);
+            color: var(--text-muted);
             font-size: 15px;
             pointer-events: none;
-            transition: color 0.2s;
             z-index: 1;
         }
+
         .form-control-custom {
             width: 100%;
-            padding: 15px 16px 15px 44px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 13px;
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14.5px;
+            padding: 10px 14px 10px 40px;
+            background: #FFFFFF;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13.5px;
             outline: none;
-            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.02);
         }
-        .form-control-custom::placeholder { color: var(--muted); }
+        .form-control-custom::placeholder { color: #94A3B8; }
         .form-control-custom:focus {
-            border-color: var(--accent);
-            background: rgba(200,169,126,0.05);
-            box-shadow: 0 0 0 3px rgba(200,169,126,0.15);
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
-        .input-wrap:focus-within .input-icon { color: var(--accent); }
 
         .pass-toggle {
             position: absolute;
-            right: 14px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
-            color: var(--muted);
+            color: var(--text-muted);
             cursor: pointer;
             font-size: 15px;
             padding: 4px;
-            transition: color 0.2s;
             z-index: 1;
         }
-        .pass-toggle:hover { color: var(--accent); }
+        .pass-toggle:hover { color: var(--text-primary); }
 
         .alert-error {
-            padding: 13px 16px;
-            border-radius: 12px;
-            font-size: 13.5px;
+            padding: 11px 14px;
+            border-radius: 6px;
+            font-size: 13px;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(248,113,113,0.1);
-            border: 1px solid rgba(248,113,113,0.2);
-            color: var(--error);
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-6px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Shake animation for errors */
-        .shake {
-            animation: shake 0.4s ease;
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%       { transform: translateX(-8px); }
-            40%       { transform: translateX(8px); }
-            60%       { transform: translateX(-5px); }
-            80%       { transform: translateX(5px); }
+            gap: 8px;
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            color: var(--danger-red);
         }
 
         .btn-submit {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, var(--accent), #8b6428);
-            border: none;
-            border-radius: 13px;
-            color: #fff;
-            font-family: 'Syne', sans-serif;
+            padding: 11px;
+            background: var(--primary-blue);
+            border: 1px solid var(--primary-blue);
+            border-radius: 6px;
+            color: #FFFFFF;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
-            margin-top: 24px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 24px rgba(200,169,126,0.25);
+            margin-top: 8px;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .btn-submit::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-            opacity: 0;
-            transition: opacity 0.2s;
+        .btn-submit:hover {
+            background: var(--primary-blue-hover);
+            border-color: var(--primary-blue-hover);
+            color: #FFFFFF;
         }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(200,169,126,0.4); }
-        .btn-submit:hover::after { opacity: 1; }
-        .btn-submit:active { transform: translateY(0); }
 
         .btn-spinner {
             display: none;
-            width: 18px; height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: #fff;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #FFFFFF;
             border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin: 0 auto;
+            animation: spin 0.6s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading .btn-text { display: none; }
@@ -368,140 +298,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin: 24px 0 20px;
-            color: var(--muted);
+            margin: 20px 0;
+            color: var(--text-muted);
             font-size: 12px;
+            font-weight: 500;
         }
         .divider::before, .divider::after {
             content: '';
             flex: 1;
             height: 1px;
-            background: rgba(255,255,255,0.1);
+            background: #E2E8F0;
         }
 
         .customer-link {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 13px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 13px;
-            color: var(--muted);
+            gap: 6px;
+            padding: 9.5px;
+            background: #FFFFFF;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            color: var(--text-secondary);
             text-decoration: none;
-            font-size: 13.5px;
-            transition: background 0.2s, border-color 0.2s, color 0.2s;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.15s ease-in-out;
         }
         .customer-link:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.2);
-            color: var(--text);
+            background: #F8FAFC;
+            border-color: #94A3B8;
+            color: var(--text-primary);
         }
 
         .form-footer {
             text-align: center;
-            margin-top: 28px;
+            margin-top: 24px;
             font-size: 13px;
-            color: var(--muted);
+            color: var(--text-muted);
         }
         .form-footer a {
-            color: var(--accent);
+            color: var(--primary-blue);
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
         }
-        .form-footer a:hover { color: var(--accent2); }
-
-        /* Entrance animations */
-        .animate-in {
-            opacity: 0;
-            transform: translateY(18px);
-            animation: fadeUp 0.55s ease forwards;
-        }
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-        .d1 { animation-delay: 0.05s; }
-        .d2 { animation-delay: 0.15s; }
-        .d3 { animation-delay: 0.25s; }
-        .d4 { animation-delay: 0.35s; }
-
-        @media (max-width: 500px) {
-            .glass-card { padding: 32px 24px; }
-        }
+        .form-footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div class="bg-mesh"></div>
-<div class="grain"></div>
-<div class="deco-lines"></div>
-
 <div class="login-wrap">
 
-    <div class="brand-mark animate-in">
-        <div class="brand-icon"><i class="bi bi-bag-heart-fill"></i></div>
-        <span class="brand-name">TamizhMart</span>
+    <div class="brand-header">
+        <div class="brand-icon-box"><i class="bi bi-shop"></i></div>
+        <div class="brand-title">TamizhMart Seller Console</div>
+        <div class="brand-subtitle">Manage orders, inventory, and storefront settings</div>
     </div>
 
-    <div class="glass-card animate-in d1" style="position:relative;" id="loginCard">
+    <div class="card-panel" id="loginCard">
 
-        <h2 class="form-heading">Welcome back</h2>
-        <p class="form-sub">Sign in to manage your shop</p>
+        <h2 class="form-heading">Sign in to your shop</h2>
+        <p class="form-sub">Enter your seller credentials to access your dashboard</p>
 
         <?php if ($error): ?>
         <div class="alert-error" id="errorAlert">
-            <i class="bi bi-shield-exclamation"></i>
+            <i class="bi bi-exclamation-circle-fill"></i>
             <?= htmlspecialchars($error) ?>
         </div>
         <?php endif; ?>
 
         <form method="POST" id="loginForm" novalidate>
 
-            <div class="input-wrap animate-in d2">
-                <input
-                    type="email"
-                    name="email"
-                    class="form-control-custom"
-                    placeholder="Email address"
-                    required
-                    autofocus
-                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-                >
-                <i class="bi bi-envelope input-icon"></i>
+            <div class="form-group-custom">
+                <label class="form-label-custom">Email Address</label>
+                <div class="input-wrap">
+                    <input
+                        type="email"
+                        name="email"
+                        class="form-control-custom"
+                        placeholder="seller@example.com"
+                        required
+                        autofocus
+                        value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
+                    >
+                    <i class="bi bi-envelope input-icon"></i>
+                </div>
             </div>
 
-            <div class="input-wrap animate-in d3">
-                <input
-                    type="password"
-                    name="password"
-                    class="form-control-custom"
-                    placeholder="Password"
-                    id="passwordInput"
-                    required
-                >
-                <i class="bi bi-lock input-icon"></i>
-                <button type="button" class="pass-toggle" onclick="togglePass()">
-                    <i class="bi bi-eye" id="eyeIcon"></i>
-                </button>
+            <div class="form-group-custom">
+                <label class="form-label-custom">Password</label>
+                <div class="input-wrap">
+                    <input
+                        type="password"
+                        name="password"
+                        class="form-control-custom"
+                        placeholder="••••••••"
+                        id="passwordInput"
+                        required
+                    >
+                    <i class="bi bi-lock input-icon"></i>
+                    <button type="button" class="pass-toggle" onclick="togglePass()">
+                        <i class="bi bi-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
             </div>
 
-            <button type="submit" class="btn-submit animate-in d4" id="submitBtn">
-                <span class="btn-text"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In to Dashboard</span>
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span class="btn-text"><i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Seller Central</span>
                 <div class="btn-spinner"></div>
             </button>
 
         </form>
 
-        <div class="divider animate-in d4">or</div>
+        <div class="divider">OR</div>
 
-        <a href="../auth/login.php" class="customer-link animate-in d4">
-            <i class="bi bi-person-circle"></i>
-            Sign in as a customer instead
+        <a href="../auth/login.php" class="customer-link">
+            <i class="bi bi-person"></i> Sign in as a Customer
         </a>
 
     </div>
 
-    <div class="form-footer animate-in d4">
-        Don't have a shop yet? <a href="register.php">Create one free <i class="bi bi-arrow-right"></i></a>
+    <div class="form-footer">
+        Don't have a seller account yet? <a href="register.php">Create shop <i class="bi bi-arrow-right"></i></a>
     </div>
 
 </div>
@@ -517,11 +435,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     document.getElementById('loginForm').addEventListener('submit', function () {
         document.getElementById('submitBtn').classList.add('loading');
     });
-
-    // Shake card on error
-    <?php if ($error): ?>
-    document.getElementById('loginCard').classList.add('shake');
-    <?php endif; ?>
 </script>
 
 </body>

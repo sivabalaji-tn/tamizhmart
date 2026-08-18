@@ -126,9 +126,9 @@ $products = $conn->query("
 <div class="card-glass animate-in" style="margin-bottom:16px;">
     <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <div style="position:relative;flex:1;min-width:180px;">
-            <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;"></i>
-            <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" placeholder="Search products..."
-                class="input-custom" style="padding-left:38px;">
+            <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;"></i>
+            <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" placeholder="Search product title..."
+                class="input-custom" style="padding-left:36px;">
         </div>
         <select name="cat" class="input-custom" style="width:auto;min-width:150px;">
             <option value="0">All Categories</option>
@@ -141,20 +141,20 @@ $products = $conn->query("
             <option value="low" <?= $filter_stock === 'low' ? 'selected' : '' ?>>Low Stock (&le;5)</option>
             <option value="out" <?= $filter_stock === 'out' ? 'selected' : '' ?>>Out of Stock</option>
         </select>
-        <button type="submit" class="btn-primary-custom">Filter</button>
+        <button type="submit" class="btn-primary-custom"><i class="bi bi-funnel"></i> Filter</button>
         <?php if ($search || $filter_cat || $filter_stock !== 'all'): ?>
         <a href="products.php" class="btn-ghost-custom">Reset</a>
         <?php endif; ?>
     </form>
 </div>
 
-<!-- ── Products Grid/Table ── -->
+<!-- ── Products Table ── -->
 <?php if ($products->num_rows === 0): ?>
 <div class="card-glass animate-in d2">
     <div class="empty-state">
         <i class="bi bi-box-seam"></i>
-        <h4>No Products Yet</h4>
-        <p>Click "Add Product" to create your first product.</p>
+        <h4>No Products Found</h4>
+        <p>Click "Add Product" to create your first product listing.</p>
     </div>
 </div>
 <?php else: ?>
@@ -176,7 +176,7 @@ $products = $conn->query("
                 <tr>
                     <td style="padding-left:20px;">
                         <div style="display:flex;align-items:center;gap:12px;">
-                            <div style="width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--card-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                            <div style="width:40px;height:40px;border-radius:6px;overflow:hidden;background:#F1F5F9;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid #E2E8F0;">
                                 <?php
                                 $prod_img_src = !empty($p['image_url']) ? htmlspecialchars($p['image_url'])
                                     : (!empty($p['image']) ? (strpos($p['image'],'http')===0 ? htmlspecialchars($p['image']) : '../assets/uploads/products/'.htmlspecialchars($p['image'])) : '');
@@ -184,24 +184,24 @@ $products = $conn->query("
                                 <?php if ($prod_img_src): ?>
                                 <img src="<?= $prod_img_src ?>" style="width:100%;height:100%;object-fit:cover;">
                                 <?php else: ?>
-                                <i class="bi bi-image" style="color:var(--muted);font-size:18px;"></i>
+                                <i class="bi bi-image" style="color:var(--text-muted);font-size:16px;"></i>
                                 <?php endif; ?>
                             </div>
                             <div>
-                                <div style="font-weight:500;font-size:14px;"><?= htmlspecialchars($p['name']) ?></div>
-                                <div style="font-size:12px;color:var(--muted);margin-top:2px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars(substr($p['description'] ?? '', 0, 50)) ?></div>
+                                <div style="font-weight:600;font-size:13.5px;color:var(--text-primary);"><?= htmlspecialchars($p['name']) ?></div>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:1px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars(substr($p['description'] ?? '', 0, 55)) ?></div>
                             </div>
                         </div>
                     </td>
                     <td>
-                        <span style="background:var(--accent-dim);color:var(--accent);padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;">
+                        <span style="background:#F1F5F9;color:#475569;border:1px solid #E2E8F0;padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:600;">
                             <?= htmlspecialchars($p['cat_name'] ?? 'Uncategorised') ?>
                         </span>
                     </td>
                     <td>
-                        <div style="font-family:'Syne',sans-serif;font-weight:700;">&#8377;<?= number_format($p['price'], 2) ?></div>
+                        <div style="font-weight:700;color:var(--text-primary);">&#8377;<?= number_format($p['price'], 2) ?></div>
                         <?php if ($p['discount_price']): ?>
-                        <div style="font-size:12px;color:var(--success);">&#8377;<?= number_format($p['discount_price'], 2) ?> offer</div>
+                        <div style="font-size:11.5px;color:var(--success-text);font-weight:600;">&#8377;<?= number_format($p['discount_price'], 2) ?> sale</div>
                         <?php endif; ?>
                     </td>
                     <td>
@@ -210,7 +210,7 @@ $products = $conn->query("
                         <?php elseif ($p['stock'] <= 5): ?>
                         <span class="status-pill pill-pending"><?= $p['stock'] ?> left</span>
                         <?php else: ?>
-                        <span style="font-weight:600;color:var(--success);"><?= $p['stock'] ?></span>
+                        <span style="font-weight:600;color:var(--success-text);"><?= $p['stock'] ?></span>
                         <?php endif; ?>
                     </td>
                     <td>
@@ -224,17 +224,17 @@ $products = $conn->query("
                             <form method="POST" style="display:inline;">
                                 <input type="hidden" name="action" value="toggle">
                                 <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                                <button type="submit" class="btn-ghost-custom" style="padding:6px 10px;font-size:12px;" title="<?= $p['is_active'] ? 'Hide' : 'Show' ?>">
+                                <button type="submit" class="btn-ghost-custom" style="padding:4px 8px;font-size:12px;" title="<?= $p['is_active'] ? 'Hide' : 'Show' ?>">
                                     <i class="bi bi-<?= $p['is_active'] ? 'eye-slash' : 'eye' ?>"></i>
                                 </button>
                             </form>
                             <!-- Edit -->
-                            <button class="btn-ghost-custom" style="padding:6px 10px;font-size:12px;"
+                            <button class="btn-ghost-custom" style="padding:4px 8px;font-size:12px;"
                                 onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <!-- Delete -->
-                            <button class="btn-danger-custom" style="padding:6px 10px;"
+                            <button class="btn-danger-custom" style="padding:4px 8px;"
                                 onclick="confirmDelete(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>')">
                                 <i class="bi bi-trash3"></i>
                             </button>
@@ -250,26 +250,26 @@ $products = $conn->query("
 
 <!-- ── Add Product Modal ── -->
 <div class="modal-backdrop-custom" id="addProductModal">
-    <div class="modal-box" style="max-width:580px;">
+    <div class="modal-box" style="max-width:560px;">
         <div class="modal-header">
-            <div class="modal-title"><i class="bi bi-plus-circle" style="color:var(--accent);margin-right:8px;"></i>Add New Product</div>
+            <div class="modal-title"><i class="bi bi-plus-circle-fill" style="color:var(--primary);margin-right:6px;"></i>Add New Product</div>
             <button class="modal-close" onclick="closeModal('addProductModal')"><i class="bi bi-x-lg"></i></button>
         </div>
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="add">
             <?php if (empty($categories)): ?>
-            <div class="alert-flash alert-flash-error" style="margin-bottom:20px;"><i class="bi bi-exclamation-circle"></i>Please <a href="categories.php" style="color:var(--danger);font-weight:600;">add a category</a> first.</div>
+            <div class="alert-flash alert-flash-error" style="margin-bottom:16px;"><i class="bi bi-exclamation-circle"></i>Please <a href="categories.php" style="color:var(--danger-text);font-weight:700;">add a category</a> first.</div>
             <?php endif; ?>
             <div style="display:grid;gap:14px;">
                 <div>
-                    <div class="form-label-custom">Product Name *</div>
-                    <input type="text" name="name" class="input-custom" placeholder="e.g. Chocolate Truffle Cake" required>
+                    <div class="form-label-custom">Product Title *</div>
+                    <input type="text" name="name" class="input-custom" placeholder="e.g. Premium Basmati Rice 5kg" required>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
                         <div class="form-label-custom">Category *</div>
                         <select name="category_id" class="input-custom" required>
-                            <option value="">Select category</option>
+                            <option value="">Select Category</option>
                             <?php foreach ($categories as $c): ?>
                             <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
                             <?php endforeach; ?>
@@ -282,7 +282,7 @@ $products = $conn->query("
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
-                        <div class="form-label-custom">Price (&#8377;) *</div>
+                        <div class="form-label-custom">Regular Price (&#8377;) *</div>
                         <input type="number" name="price" class="input-custom" placeholder="0.00" step="0.01" min="0" required>
                     </div>
                     <div>
@@ -292,19 +292,19 @@ $products = $conn->query("
                 </div>
                 <div>
                     <div class="form-label-custom">Description</div>
-                    <textarea name="description" class="input-custom" placeholder="Product description..."></textarea>
+                    <textarea name="description" class="input-custom" placeholder="Detailed product specifications..."></textarea>
                 </div>
                 <div>
                     <div class="form-label-custom">Product Image</div>
                     <!-- Tab switcher -->
-                    <div style="display:flex;gap:0;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;margin-bottom:10px;width:fit-content;">
+                    <div style="display:flex;gap:0;border:1px solid #CBD5E1;border-radius:6px;overflow:hidden;margin-bottom:8px;width:fit-content;">
                         <button type="button" id="addTabLocal" onclick="switchImgTab('add','local')"
-                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.2s;">
+                            style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--primary);color:#fff;">
                             <i class="bi bi-upload"></i> Upload
                         </button>
                         <button type="button" id="addTabUrl" onclick="switchImgTab('add','url')"
-                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--card-bg);color:var(--muted);transition:all 0.2s;">
-                            <i class="bi bi-link-45deg"></i> URL
+                            style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#F1F5F9;color:var(--text-secondary);">
+                            <i class="bi bi-link-45deg"></i> Image URL
                         </button>
                     </div>
                     <!-- Local upload -->
@@ -317,16 +317,16 @@ $products = $conn->query("
                             oninput="previewImgUrl(this.value,'addPreview')">
                     </div>
                     <!-- Preview -->
-                    <img id="addPreview" src="" style="margin-top:10px;max-height:110px;border-radius:8px;display:none;object-fit:cover;">
+                    <img id="addPreview" src="" style="margin-top:10px;max-height:100px;border-radius:6px;display:none;object-fit:cover;border:1px solid #CBD5E1;">
                 </div>
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                    <input type="checkbox" name="is_active" value="1" checked style="accent-color:var(--accent);width:16px;height:16px;">
-                    <span style="font-size:13.5px;">Make product visible in shop</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                    <input type="checkbox" name="is_active" value="1" checked style="accent-color:var(--primary);width:16px;height:16px;">
+                    <span style="font-size:13px;font-weight:500;">Make product visible in storefront</span>
                 </label>
             </div>
-            <div style="display:flex;gap:10px;margin-top:22px;">
-                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;">
-                    <i class="bi bi-plus-lg"></i> Add Product
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button type="submit" class="btn-orange-custom" style="flex:1;justify-content:center;">
+                    <i class="bi bi-plus-lg"></i> Save Product
                 </button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('addProductModal')">Cancel</button>
             </div>
@@ -336,19 +336,19 @@ $products = $conn->query("
 
 <!-- ── Edit Product Modal ── -->
 <div class="modal-backdrop-custom" id="editProductModal">
-    <div class="modal-box" style="max-width:580px;">
+    <div class="modal-box" style="max-width:560px;">
         <div class="modal-header">
-            <div class="modal-title"><i class="bi bi-pencil-square" style="color:var(--accent);margin-right:8px;"></i>Edit Product</div>
+            <div class="modal-title"><i class="bi bi-pencil-square" style="color:var(--primary);margin-right:6px;"></i>Edit Product Listing</div>
             <button class="modal-close" onclick="closeModal('editProductModal')"><i class="bi bi-x-lg"></i></button>
         </div>
         <form method="POST" enctype="multipart/form-data" id="editProductForm">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="product_id" id="edit_pid">
             <input type="hidden" name="old_image"     id="edit_old_image">
-                            <input type="hidden" name="old_image_url" id="edit_old_image_url">
+            <input type="hidden" name="old_image_url" id="edit_old_image_url">
             <div style="display:grid;gap:14px;">
                 <div>
-                    <div class="form-label-custom">Product Name *</div>
+                    <div class="form-label-custom">Product Title *</div>
                     <input type="text" name="name" id="edit_name" class="input-custom" required>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -367,11 +367,11 @@ $products = $conn->query("
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
-                        <div class="form-label-custom">Price (&#8377;) *</div>
+                        <div class="form-label-custom">Regular Price (&#8377;) *</div>
                         <input type="number" name="price" id="edit_price" class="input-custom" step="0.01" min="0" required>
                     </div>
                     <div>
-                        <div class="form-label-custom">Discount Price</div>
+                        <div class="form-label-custom">Discount Price (&#8377;)</div>
                         <input type="number" name="discount_price" id="edit_disc" class="input-custom" step="0.01" min="0">
                     </div>
                 </div>
@@ -380,16 +380,16 @@ $products = $conn->query("
                     <textarea name="description" id="edit_desc" class="input-custom"></textarea>
                 </div>
                 <div>
-                    <div class="form-label-custom">Replace Image</div>
+                    <div class="form-label-custom">Replace Product Image</div>
                     <!-- Tab switcher -->
-                    <div style="display:flex;gap:0;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;margin-bottom:10px;width:fit-content;">
+                    <div style="display:flex;gap:0;border:1px solid #CBD5E1;border-radius:6px;overflow:hidden;margin-bottom:8px;width:fit-content;">
                         <button type="button" id="editTabLocal" onclick="switchImgTab('edit','local')"
-                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.2s;">
+                            style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--primary);color:#fff;">
                             <i class="bi bi-upload"></i> Upload
                         </button>
                         <button type="button" id="editTabUrl" onclick="switchImgTab('edit','url')"
-                            style="padding:7px 16px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;background:var(--card-bg);color:var(--muted);transition:all 0.2s;">
-                            <i class="bi bi-link-45deg"></i> URL
+                            style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#F1F5F9;color:var(--text-secondary);">
+                            <i class="bi bi-link-45deg"></i> Image URL
                         </button>
                     </div>
                     <!-- Local upload -->
@@ -402,16 +402,16 @@ $products = $conn->query("
                             oninput="previewImgUrl(this.value,'editPreview')">
                     </div>
                     <!-- Preview -->
-                    <img id="editPreview" src="" style="margin-top:10px;max-height:110px;border-radius:8px;display:none;object-fit:cover;">
+                    <img id="editPreview" src="" style="margin-top:10px;max-height:100px;border-radius:6px;display:none;object-fit:cover;border:1px solid #CBD5E1;">
                 </div>
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                    <input type="checkbox" name="is_active" value="1" id="edit_active" style="accent-color:var(--accent);width:16px;height:16px;">
-                    <span style="font-size:13.5px;">Product is visible in shop</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                    <input type="checkbox" name="is_active" value="1" id="edit_active" style="accent-color:var(--primary);width:16px;height:16px;">
+                    <span style="font-size:13px;font-weight:500;">Product is visible in storefront</span>
                 </label>
             </div>
-            <div style="display:flex;gap:10px;margin-top:22px;">
+            <div style="display:flex;gap:10px;margin-top:20px;">
                 <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;">
-                    <i class="bi bi-check-lg"></i> Save Changes
+                    <i class="bi bi-check-lg"></i> Update Product
                 </button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('editProductModal')">Cancel</button>
             </div>
@@ -422,20 +422,20 @@ $products = $conn->query("
 <!-- ── Delete Confirm Modal ── -->
 <div class="modal-backdrop-custom" id="deleteModal">
     <div class="modal-box" style="max-width:400px;">
-        <div style="text-align:center;padding:8px 0 20px;">
-            <div style="width:56px;height:56px;background:var(--danger-dim);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--danger);margin:0 auto 16px;">
+        <div style="text-align:center;padding:8px 0 16px;">
+            <div style="width:48px;height:48px;background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--danger-text);margin:0 auto 12px;">
                 <i class="bi bi-trash3"></i>
             </div>
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:8px;">Delete Product?</div>
-            <div style="font-size:13.5px;color:var(--muted);" id="deleteProductName"></div>
-            <div style="font-size:12.5px;color:var(--muted);margin-top:6px;">This action cannot be undone.</div>
+            <div style="font-weight:700;font-size:17px;color:var(--text-primary);margin-bottom:6px;">Delete Product?</div>
+            <div style="font-size:13px;color:var(--text-secondary);" id="deleteProductName"></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">This product will be removed from catalog.</div>
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="product_id" id="deleteProductId">
             <div style="display:flex;gap:10px;">
-                <button type="submit" class="btn-danger-custom" style="flex:1;justify-content:center;padding:12px;">
-                    <i class="bi bi-trash3"></i> Yes, Delete
+                <button type="submit" class="btn-danger-custom" style="flex:1;justify-content:center;padding:10px;">
+                    <i class="bi bi-trash3"></i> Confirm Delete
                 </button>
                 <button type="button" class="btn-ghost-custom" onclick="closeModal('deleteModal')" style="flex:1;justify-content:center;">Cancel</button>
             </div>
@@ -447,7 +447,6 @@ $products = $conn->query("
 
 <script>
 // ── Modal helpers ─────────────────────────────────────────────
-// openModal / closeModal defined in includes/footer.php
 document.querySelectorAll('.modal-backdrop-custom').forEach(m => {
     m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
 });
@@ -462,21 +461,19 @@ function switchImgTab(prefix, tab) {
     if (tab === 'local') {
         localPanel.style.display = 'block';
         urlPanel.style.display   = 'none';
-        localTab.style.background = 'var(--accent)';
-        localTab.style.color      = '#fff';
-        urlTab.style.background   = 'var(--card-bg)';
-        urlTab.style.color        = 'var(--muted)';
-        // Clear URL input & preview if switching away
+        localTab.style.background = 'var(--primary)';
+        localTab.style.color      = '#ffffff';
+        urlTab.style.background   = '#F1F5F9';
+        urlTab.style.color        = 'var(--text-secondary)';
         const urlInput = urlPanel.querySelector('input[type=url]');
         if (urlInput) urlInput.value = '';
     } else {
         urlPanel.style.display   = 'block';
         localPanel.style.display = 'none';
-        urlTab.style.background  = 'var(--accent)';
-        urlTab.style.color       = '#fff';
-        localTab.style.background = 'var(--card-bg)';
-        localTab.style.color      = 'var(--muted)';
-        // Clear file input & preview if switching away
+        urlTab.style.background  = 'var(--primary)';
+        urlTab.style.color       = '#ffffff';
+        localTab.style.background = '#F1F5F9';
+        localTab.style.color      = 'var(--text-secondary)';
         const fileInput = localPanel.querySelector('input[type=file]');
         if (fileInput) fileInput.value = '';
     }
@@ -520,21 +517,18 @@ function openEditModal(p) {
     document.getElementById('edit_old_image_url').value  = p.image_url || '';
     document.getElementById('edit_active').checked       = p.is_active == 1;
 
-    // Category select
     const catSel = document.getElementById('edit_cat');
     if (catSel) catSel.value = p.category_id || '';
 
     const preview = document.getElementById('editPreview');
     const urlInput = document.getElementById('editImageUrl');
 
-    // If product has a URL image — switch to URL tab and prefill
     if (p.image_url) {
         switchImgTab('edit', 'url');
         if (urlInput) urlInput.value = p.image_url;
         preview.src = p.image_url;
         preview.style.display = 'block';
     } else if (p.image) {
-        // Has uploaded file — show on Upload tab
         switchImgTab('edit', 'local');
         preview.src = '../assets/uploads/products/' + p.image;
         preview.style.display = 'block';

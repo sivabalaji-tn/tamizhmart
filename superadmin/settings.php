@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_settings') {
         $settings = [
             'site_name'           => trim($_POST['site_name'] ?? 'TamizhMart'),
+            'site_city'           => trim($_POST['site_city'] ?? 'Your City'),
             'contact_email'       => trim($_POST['contact_email'] ?? ''),
             'maintenance_mode'    => isset($_POST['maintenance_mode']) ? '1' : '0',
             'maintenance_message' => trim($_POST['maintenance_message'] ?? ''),
@@ -81,6 +82,16 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                         <div class="form-label-custom">Platform Name</div>
                         <input type="text" name="site_name" class="input-custom"
                             value="<?= htmlspecialchars($settings_map['site_name'] ?? 'TamizhMart') ?>" required>
+                    </div>
+                    <div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.2);border-radius:var(--radius-sm);padding:16px;">
+                        <div class="form-label-custom" style="display:flex;align-items:center;gap:7px;">
+                            <i class="bi bi-geo-alt-fill" style="color:var(--info);"></i>
+                            Application City
+                        </div>
+                        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">This city name appears everywhere on the platform — hero page, shop listings, footer, etc. Change it to deploy in a new city.</div>
+                        <input type="text" name="site_city" class="input-custom"
+                            value="<?= htmlspecialchars($settings_map['site_city'] ?? 'Your City') ?>"
+                            placeholder="e.g. Madurai, Chennai, Coimbatore..." required>
                     </div>
                     <div>
                         <div class="form-label-custom">Contact / Support Email</div>

@@ -83,6 +83,37 @@ require 'includes/shop_head.php';
 .hero-nobanner .hero-btn-g{background:var(--card-bg);border-color:var(--border);color:var(--text);}
 .hero-nobanner .hero-btn-g:hover{background:var(--primary-light);color:var(--primary);}
 
+/* hero logo */
+.hero-shop-logo-wrap{flex-shrink:0;animation:fadeUp .5s ease both;}
+.hero-shop-logo-img{
+    width:140px;height:140px;border-radius:24px;object-fit:cover;
+    box-shadow:0 8px 40px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.18);
+    background:rgba(255,255,255,.12);
+    backdrop-filter:blur(8px);
+    border:2px solid rgba(255,255,255,.25);
+    display:block;
+}
+.hero-shop-logo-initial{
+    width:140px;height:140px;border-radius:24px;
+    background:var(--primary);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display,'Syne',sans-serif);font-weight:800;font-size:52px;color:#fff;
+    box-shadow:0 8px 40px rgba(0,0,0,.25),0 0 0 4px rgba(255,255,255,.15);
+    border:2px solid rgba(255,255,255,.2);
+    letter-spacing:-2px;
+}
+.hero-nobanner .hero-shop-logo-img{
+    box-shadow:0 8px 32px color-mix(in srgb,var(--primary) 25%,transparent),0 0 0 4px var(--primary-light);
+    border-color:var(--primary-mid);
+}
+.hero-nobanner .hero-shop-logo-initial{
+    box-shadow:0 8px 32px color-mix(in srgb,var(--primary) 25%,transparent),0 0 0 4px var(--primary-light);
+}
+@media(max-width:640px){
+    .hero-shop-logo-img,.hero-shop-logo-initial{width:96px;height:96px;border-radius:18px;font-size:36px;}
+    .hero-body>div{gap:20px;}
+}
+
 /* stats bar */
 .hero-stats{position:relative;z-index:2;background:rgba(0,0,0,.35);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.08);}
 .hero-stats-inner{max-width:1200px;margin:0 auto;padding:18px 40px;display:flex;align-items:center;}
@@ -260,20 +291,34 @@ require 'includes/shop_head.php';
         <?php endif; ?>
     </div>
     <div class="hero-body">
-        <div>
-            <div class="hero-eyebrow"><i class="bi bi-stars"></i> <?= htmlspecialchars($shop['name']) ?></div>
-            <h1 class="hero-title">
-                <?php $words=explode(' ',$shop['name']); $last=array_pop($words);
-                echo htmlspecialchars(implode(' ',$words)).' <span class="aw">'.htmlspecialchars($last).'</span>'; ?>
-            </h1>
-            <p class="hero-sub"><?= $shop['description']?htmlspecialchars($shop['description']):"Discover our curated selection of premium products — quality you can trust, prices you'll love." ?></p>
-            <div class="hero-ctas">
-                <a href="products.php?shop=<?= $slug ?>" class="hero-btn-p"><i class="bi bi-grid-fill"></i> Shop All Products</a>
-                <?php if (!isset($_SESSION['user_id'])): ?>
-                <a href="../auth/register.php?shop=<?= $slug ?>" class="hero-btn-g"><i class="bi bi-person-plus"></i> Create Account</a>
+        <div style="display:flex;align-items:center;gap:40px;width:100%;flex-wrap:wrap;">
+            <!-- Shop Logo in Hero -->
+            <div class="hero-shop-logo-wrap">
+                <?php if ($shop['logo']): ?>
+                <img src="<?= strpos($shop['logo'],'http')===0 ? htmlspecialchars($shop['logo']) : '../assets/uploads/logos/'.htmlspecialchars($shop['logo']) ?>"
+                     alt="<?= htmlspecialchars($shop['name']) ?> logo"
+                     class="hero-shop-logo-img">
                 <?php else: ?>
-                <a href="orders.php?shop=<?= $slug ?>" class="hero-btn-g"><i class="bi bi-bag-check"></i> My Orders</a>
+                <div class="hero-shop-logo-initial">
+                    <?= strtoupper(substr($shop['name'],0,1)) ?>
+                </div>
                 <?php endif; ?>
+            </div>
+            <div style="flex:1;min-width:260px;">
+                <div class="hero-eyebrow"><i class="bi bi-stars"></i> <?= htmlspecialchars($shop['name']) ?></div>
+                <h1 class="hero-title">
+                    <?php $words=explode(' ',$shop['name']); $last=array_pop($words);
+                    echo htmlspecialchars(implode(' ',$words)).' <span class="aw">'.htmlspecialchars($last).'</span>'; ?>
+                </h1>
+                <p class="hero-sub"><?= $shop['description']?htmlspecialchars($shop['description']):"Discover our curated selection of premium products — quality you can trust, prices you'll love." ?></p>
+                <div class="hero-ctas">
+                    <a href="products.php?shop=<?= $slug ?>" class="hero-btn-p"><i class="bi bi-grid-fill"></i> Shop All Products</a>
+                    <?php if (!isset($_SESSION['user_id'])): ?>
+                    <a href="../auth/register.php?shop=<?= $slug ?>" class="hero-btn-g"><i class="bi bi-person-plus"></i> Create Account</a>
+                    <?php else: ?>
+                    <a href="orders.php?shop=<?= $slug ?>" class="hero-btn-g"><i class="bi bi-bag-check"></i> My Orders</a>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

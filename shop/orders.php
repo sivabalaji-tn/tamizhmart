@@ -32,7 +32,7 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
     border: 1px solid var(--border);
     border-radius: var(--radius);
     margin-bottom: 16px;
-    overflow: hidden;
+    /* Removed overflow:hidden — it was clipping the timeline dot glow rings */
     transition: var(--transition);
 }
 .order-card:hover { border-color: var(--border-mid); box-shadow: var(--card-shadow); }
@@ -44,6 +44,7 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
     border-bottom: 1px solid var(--border);
     cursor: pointer;
     transition: background 0.2s;
+    border-radius: var(--radius) var(--radius) 0 0;
     user-select: none;
 }
 .order-card-header:hover { background: color-mix(in srgb, var(--primary) 3%, var(--card-bg)); }
@@ -52,7 +53,7 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
 .order-date { font-size:13px; color:var(--text-muted); }
 .order-total { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; }
 
-/* Timeline */
+/* ── Timeline ───────────────────────────────────────────────────── */
 .order-body { padding: 22px; display: none; }
 .order-body.open { display: block; }
 
@@ -60,61 +61,103 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
     display: flex;
     margin-bottom: 28px;
     position: relative;
-    overflow-x: auto;
-    padding-bottom: 4px;
+    /* Extra top padding so glow rings aren't clipped by card edge */
+    padding: 16px 8px 4px;
+    overflow: visible;
 }
+
+/* Full-width grey base track */
 .timeline::before {
     content: '';
     position: absolute;
-    top: 18px; left: 0; right: 0; height: 2px;
+    top: 34px; left: 10%; right: 10%; height: 2px;
     background: var(--border);
     z-index: 0;
 }
+
 .timeline-step {
-    flex: 1; min-width: 80px;
+    flex: 1; min-width: 70px;
     display: flex; flex-direction: column; align-items: center;
-    gap: 8px; position: relative; z-index: 1;
+    gap: 10px; position: relative; z-index: 1;
 }
+
+/* Green fill line runs from center of a done step to center of next step */
+.timeline-step.step-done::after {
+    content: '';
+    position: absolute;
+    top: 17px;
+    left: 50%; right: -50%;
+    height: 2px;
+    background: var(--primary);
+    z-index: 0;
+}
+.timeline-step:last-child::after { display: none; }
+
 .timeline-dot {
     width: 36px; height: 36px;
     border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--bg);
+    border: 2.5px solid var(--border);
+    /* Always solid white — prevents card-bg bleeding through the circle */
+    background: #ffffff;
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; color: var(--text-muted);
     transition: var(--transition);
     position: relative;
+    z-index: 2;
+    flex-shrink: 0;
 }
 .timeline-dot.done {
     background: var(--primary);
     border-color: var(--primary);
     color: #fff;
-    box-shadow: 0 0 0 4px var(--primary-light);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 .timeline-dot.current {
+    background: #ffffff;
     border-color: var(--primary);
+    border-width: 2.5px;
     color: var(--primary);
-    box-shadow: 0 0 0 4px var(--primary-light);
-    animation: pulse 2s infinite;
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 20%, transparent);
+    animation: dot-pulse 2s ease-in-out infinite;
 }
-@keyframes pulse { 0%,100%{box-shadow:0 0 0 4px var(--primary-light)} 50%{box-shadow:0 0 0 8px var(--primary-light)} }
-.timeline-label { font-size:11.5px; font-weight:500; color:var(--text-muted); text-align:center; }
-.timeline-label.done,.timeline-label.current { color:var(--primary); font-weight:600; }
+@keyframes dot-pulse {
+    0%,100% { box-shadow: 0 0 0 5px  color-mix(in srgb, var(--primary) 20%, transparent); }
+    50%      { box-shadow: 0 0 0 10px color-mix(in srgb, var(--primary) 8%,  transparent); }
+}
 
-/* Cancelled state */
-.timeline.cancelled .timeline-step:last-child .timeline-dot { background:#dc2626; border-color:#dc2626; color:#fff; }
-.timeline.cancelled .timeline-step:last-child .timeline-label { color:#dc2626; }
+.timeline-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+.timeline-label.done    { color: var(--primary); font-weight: 700; }
+.timeline-label.current { color: var(--primary); font-weight: 700; }
 
-/* Order items inside */
+/* Cancelled */
+.timeline.cancelled .timeline-step:last-child .timeline-dot {
+    background: #dc2626; border-color: #dc2626; color: #fff; box-shadow: none;
+}
+.timeline.cancelled .timeline-step:last-child .timeline-label { color: #dc2626; }
+
+/* ── Order item rows ─────────────────────────────────────────────── */
 .order-items-list { display:flex; flex-direction:column; gap:10px; }
 .order-item-row {
     display:flex; align-items:center; gap:12px;
-    padding:12px; background:color-mix(in srgb,var(--text) 3%,var(--bg));
-    border-radius:var(--radius-sm);
-    border:1px solid var(--border);
+    padding:12px;
+    background: color-mix(in srgb, var(--text) 3%, var(--bg));
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
 }
-.order-item-img { width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--primary-light);display:flex;align-items:center;justify-content:center; }
-.order-item-img img { width:100%;height:100%;object-fit:cover; }
+.order-item-img {
+    width:48px; height:48px; border-radius:8px;
+    overflow:hidden; flex-shrink:0;
+    background:var(--primary-light);
+    display:flex; align-items:center; justify-content:center;
+}
+.order-item-img img { width:100%; height:100%; object-fit:cover; }
 </style>
 
 <div class="shop-container">
@@ -163,7 +206,7 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id=$user_id AND shop_id=
                     $is_done  = $current_step > $step_idx;
                     $is_curr  = $current_step === $step_idx;
                 ?>
-                <div class="timeline-step">
+                <div class="timeline-step <?= $is_done ? 'step-done' : '' ?>">
                     <div class="timeline-dot <?= $is_done ? 'done' : ($is_curr ? 'current' : '') ?>">
                         <i class="bi bi-<?= $is_done ? 'check-lg' : $status_icons[$step] ?>"></i>
                     </div>

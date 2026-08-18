@@ -138,9 +138,9 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
     <div class="col-lg-7">
 
         <!-- Basic Info -->
-        <div class="card-glass animate-in" style="margin-bottom:16px;">
-            <div class="section-title" style="margin-bottom:4px;"><i class="bi bi-shop" style="color:var(--accent);margin-right:8px;"></i>Shop Information</div>
-            <div class="section-sub" style="margin-bottom:22px;">Basic details visible to your customers</div>
+        <div class="card-glass animate-in mb-3">
+            <div class="section-title" style="margin-bottom:2px;"><i class="bi bi-shop" style="color:var(--primary);margin-right:6px;"></i>Shop Profile Details</div>
+            <div class="section-sub" style="margin-bottom:18px;">Basic store information visible to your customers</div>
             <form method="POST">
                 <input type="hidden" name="action" value="update_info">
                 <div style="display:grid;gap:14px;">
@@ -154,40 +154,38 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                         <div>
-                            <div class="form-label-custom">Phone Number</div>
+                            <div class="form-label-custom">Support Phone</div>
                             <input type="text" name="phone" class="input-custom" placeholder="+91 00000 00000" value="<?= htmlspecialchars($settings['phone'] ?? '') ?>">
                         </div>
                         <div>
-                            <div class="form-label-custom">Shop Slug (URL)</div>
-                            <div style="padding:11px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--card-border);border-radius:var(--radius-sm);font-size:13.5px;color:var(--muted);">
-                                /<?= htmlspecialchars($shop['slug']) ?> &nbsp;<small style="color:#aaa">(clean URL)</small>
+                            <div class="form-label-custom">Storefront Handle</div>
+                            <div style="padding:9px 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:var(--radius-sm);font-size:13px;color:var(--text-muted);">
+                                /<?= htmlspecialchars($shop['slug']) ?>
                             </div>
                         </div>
                     </div>
                     <div>
                         <div class="form-label-custom">Shop Address</div>
-                        <textarea name="address_setting" class="input-custom" placeholder="Physical address (shown in footer)" style="min-height:70px;"><?= htmlspecialchars($settings['address'] ?? '') ?></textarea>
+                        <textarea name="address_setting" class="input-custom" placeholder="Physical store address (shown on invoice & footer)" style="min-height:65px;"><?= htmlspecialchars($settings['address'] ?? '') ?></textarea>
                     </div>
 
                     <!-- Announcement Bar -->
-                    <div style="padding:16px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <div style="padding:14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                             <div>
-                                <div style="font-size:13.5px;font-weight:500;">Announcement Bar</div>
-                                <div style="font-size:12px;color:var(--muted);">Shown at the top of your shop page</div>
+                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">Header Announcement Banner</div>
+                                <div style="font-size:11.5px;color:var(--text-muted);">Displayed prominently at top of your store page</div>
                             </div>
-                            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
-                                <input type="checkbox" name="announcement_active" value="1" <?= $shop['announcement_active'] ? 'checked' : '' ?> style="opacity:0;width:0;height:0;" id="annToggle">
-                                <span id="annSlider" style="position:absolute;inset:0;border-radius:99px;background:<?= $shop['announcement_active'] ? 'var(--accent)' : 'rgba(255,255,255,0.1)' ?>;transition:0.3s;">
-                                    <span style="position:absolute;height:18px;width:18px;border-radius:50%;background:#fff;top:3px;left:<?= $shop['announcement_active'] ? '23px' : '3px' ?>;transition:0.3s;" id="annThumb"></span>
-                                </span>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                                <input type="checkbox" name="announcement_active" value="1" <?= $shop['announcement_active'] ? 'checked' : '' ?> style="accent-color:var(--primary);width:16px;height:16px;">
+                                <span style="font-size:12.5px;font-weight:600;color:var(--text-secondary);">Active</span>
                             </label>
                         </div>
-                        <input type="text" name="announcement" class="input-custom" placeholder="e.g. Free delivery on orders above ₹500!" value="<?= htmlspecialchars($shop['announcement'] ?? '') ?>">
+                        <input type="text" name="announcement" class="input-custom" placeholder="e.g. Special Offer: Free delivery on orders above ₹499!" value="<?= htmlspecialchars($shop['announcement'] ?? '') ?>">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary-custom" style="margin-top:20px;">
-                    <i class="bi bi-check-lg"></i> Save Changes
+                <button type="submit" class="btn-primary-custom" style="margin-top:18px;">
+                    <i class="bi bi-check-lg"></i> Save Profile Settings
                 </button>
             </form>
         </div>
@@ -198,16 +196,16 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
     <div class="col-lg-5">
 
         <!-- Logo Upload -->
-        <div class="card-glass animate-in d1" style="margin-bottom:16px;">
-            <div class="section-title" style="margin-bottom:4px;"><i class="bi bi-image" style="color:var(--accent);margin-right:8px;"></i>Shop Logo</div>
-            <div class="section-sub" style="margin-bottom:20px;">Shown in your shop's navbar and header</div>
+        <div class="card-glass animate-in d1 mb-3">
+            <div class="section-title" style="margin-bottom:2px;"><i class="bi bi-image" style="color:var(--primary);margin-right:6px;"></i>Store Logo</div>
+            <div class="section-sub" style="margin-bottom:16px;">Displayed in your store header and invoices</div>
 
-            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;">
-                <div style="width:100px;height:100px;border-radius:20px;background:var(--card-bg);border:1px solid var(--card-border);overflow:hidden;display:flex;align-items:center;justify-content:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;">
+                <div style="width:90px;height:90px;border-radius:12px;background:#F1F5F9;border:1px solid #CBD5E1;overflow:hidden;display:flex;align-items:center;justify-content:center;">
                     <?php if ($shop['logo']): ?>
                     <img src="../assets/uploads/logos/<?= htmlspecialchars($shop['logo']) ?>" style="width:100%;height:100%;object-fit:cover;" id="logoPreviewImg">
                     <?php else: ?>
-                    <i class="bi bi-shop" style="font-size:40px;color:rgba(200,169,126,0.3);" id="logoPlaceholder"></i>
+                    <i class="bi bi-shop" style="font-size:36px;color:#94A3B8;" id="logoPlaceholder"></i>
                     <?php endif; ?>
                 </div>
                 <form method="POST" enctype="multipart/form-data" style="width:100%;">
@@ -225,21 +223,21 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
                         <?php endif; ?>
                     </div>
                 </form>
-                <div style="font-size:12px;color:var(--muted);">PNG, JPG or WEBP &middot; max 5MB &middot; recommended 200&times;200px</div>
+                <div style="font-size:11.5px;color:var(--text-muted);">PNG, JPG or WEBP &middot; max 5MB &middot; 200&times;200px recommended</div>
             </div>
         </div>
 
         <!-- Banner Upload -->
-        <div class="card-glass animate-in d2">
-            <div class="section-title" style="margin-bottom:4px;"><i class="bi bi-panorama" style="color:var(--accent);margin-right:8px;"></i>Shop Banner</div>
-            <div class="section-sub" style="margin-bottom:20px;">Hero image on your shop's home page</div>
+        <div class="card-glass animate-in d2 mb-3">
+            <div class="section-title" style="margin-bottom:2px;"><i class="bi bi-panorama" style="color:var(--primary);margin-right:6px;"></i>Store Banner</div>
+            <div class="section-sub" style="margin-bottom:16px;">Hero header graphic on your shop's homepage</div>
 
-            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;">
-                <div style="width:100%;height:120px;border-radius:12px;background:var(--card-bg);border:1px solid var(--card-border);overflow:hidden;display:flex;align-items:center;justify-content:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;">
+                <div style="width:100%;height:110px;border-radius:8px;background:#F1F5F9;border:1px solid #CBD5E1;overflow:hidden;display:flex;align-items:center;justify-content:center;">
                     <?php if ($shop['banner']): ?>
                     <img src="../assets/uploads/banners/<?= htmlspecialchars($shop['banner']) ?>" style="width:100%;height:100%;object-fit:cover;">
                     <?php else: ?>
-                    <i class="bi bi-image" style="font-size:36px;color:rgba(200,169,126,0.2);"></i>
+                    <i class="bi bi-image" style="font-size:32px;color:#94A3B8;"></i>
                     <?php endif; ?>
                 </div>
                 <form method="POST" enctype="multipart/form-data" style="width:100%;">
@@ -257,20 +255,20 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
                         <?php endif; ?>
                     </div>
                 </form>
-                <div style="font-size:12px;color:var(--muted);">Recommended 1280&times;400px &middot; max 5MB</div>
+                <div style="font-size:11.5px;color:var(--text-muted);">Recommended 1280&times;400px &middot; max 5MB</div>
             </div>
         </div>
 
         <!-- Shop URL Info -->
-        <div class="card-glass animate-in d3" style="margin-top:16px;border-color:rgba(200,169,126,0.15);">
-            <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);font-weight:600;margin-bottom:10px;">Your Shop URL</div>
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
-                <i class="bi bi-link-45deg" style="color:var(--accent);flex-shrink:0;"></i>
-                <span style="font-size:13px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        <div class="card-glass animate-in d3">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:700;margin-bottom:8px;">Live Store URL</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
+                <i class="bi bi-link-45deg" style="color:var(--primary);flex-shrink:0;"></i>
+                <span style="font-size:12.5px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                     shop.tamizhmart.optikl.ink/<?= htmlspecialchars($shop['slug']) ?>
                 </span>
                 <button onclick="navigator.clipboard.writeText('shop.tamizhmart.optikl.ink/<?= $shop['slug'] ?>').then(()=>this.innerHTML='<i class=\'bi bi-check-lg\'></i>')"
-                    style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;font-size:14px;transition:color 0.2s;" title="Copy">
+                    style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:2px 4px;font-size:14px;" title="Copy URL">
                     <i class="bi bi-clipboard"></i>
                 </button>
             </div>
@@ -282,65 +280,59 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
 <!-- ═══════════════════════════════════════════════════
      TAX SETTINGS CARD
      ═══════════════════════════════════════════════════ -->
-<div style="margin-top:24px;" class="animate-in d2">
-    <div class="card-glass" style="border-color:rgba(202,138,4,0.2);">
+<div style="margin-top:20px;" class="animate-in d2">
+    <div class="card-glass">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-            <div style="width:36px;height:36px;border-radius:8px;background:rgba(234,179,8,0.1);display:flex;align-items:center;justify-content:center;">
-                <i class="bi bi-percent" style="color:#ca8a04;font-size:18px;"></i>
+            <div style="width:36px;height:36px;border-radius:8px;background:#FFFBEB;border:1px solid #FDE68A;display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-percent" style="color:#D97706;font-size:18px;"></i>
             </div>
             <div>
-                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;">Tax Settings (GST)</div>
-                <div style="font-size:12.5px;color:var(--muted);">Set CGST &amp; SGST for invoices. Set 0% if not GST registered.</div>
+                <div style="font-weight:700;font-size:16px;color:var(--text-primary);">GST &amp; Invoicing Tax Rules</div>
+                <div style="font-size:12px;color:var(--text-muted);">Set CGST &amp; SGST rates for printed customer invoices. Set 0% if not GST registered.</div>
             </div>
         </div>
-        <hr style="border-color:var(--card-border);margin:16px 0;">
+        <hr style="border-color:#E2E8F0;margin:14px 0;">
         <?php
         $tax_enabled = $settings['tax_enabled'] ?? '0';
-        $cgst_rate   = $settings['cgst_rate']   ?? '9';
-        $sgst_rate   = $settings['sgst_rate']   ?? '9';
+        $cgst_rate   = min(28, max(0, floatval($settings['cgst_rate'] ?? 9)));
+        $sgst_rate   = min(28, max(0, floatval($settings['sgst_rate'] ?? 9)));
         ?>
         <?php if ($tax_enabled === '1'): ?>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);color:#92400e;padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;margin-bottom:16px;">
-            <span style="width:7px;height:7px;background:#ca8a04;border-radius:50%;display:inline-block;"></span>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#ECFDF5;border:1px solid #A7F3D0;color:#047857;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:14px;">
+            <span style="width:6px;height:6px;background:#059669;border-radius:50%;display:inline-block;"></span>
             GST active &mdash; CGST <?= $cgst_rate ?>% + SGST <?= $sgst_rate ?>% = <?= floatval($cgst_rate)+floatval($sgst_rate) ?>%
         </div>
         <?php else: ?>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.2);color:var(--muted);padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;margin-bottom:16px;">
-            <span style="width:7px;height:7px;background:var(--muted);border-radius:50%;display:inline-block;"></span>
-            No tax &mdash; invoices will show 0% GST
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#F1F5F9;border:1px solid #E2E8F0;color:var(--text-muted);padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:14px;">
+            <span style="width:6px;height:6px;background:var(--text-muted);border-radius:50%;display:inline-block;"></span>
+            Tax Disabled &mdash; invoices will show 0% GST
         </div>
         <?php endif; ?>
         <form method="POST">
             <input type="hidden" name="action" value="update_tax">
             <div style="display:flex;flex-direction:column;gap:14px;">
-                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
                     <input type="checkbox" name="tax_enabled" value="1" id="taxToggle"
                         <?= $tax_enabled === '1' ? 'checked' : '' ?>
                         onchange="document.getElementById('taxFields').style.display=this.checked?'grid':'none'"
-                        style="width:18px;height:18px;accent-color:#ca8a04;flex-shrink:0;">
+                        style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;">
                     <div>
-                        <div style="font-weight:600;font-size:14px;">Enable GST on invoices</div>
-                        <div style="font-size:12px;color:var(--muted);margin-top:1px;">Disable if your shop is not GST registered (small traders, composition scheme, etc.)</div>
+                        <div style="font-weight:600;font-size:13.5px;color:var(--text-primary);">Enable GST on customer invoices</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:1px;">Disable if your store is un-registered or operating under composition scheme</div>
                     </div>
                 </label>
-                <div id="taxFields" style="display:<?= $tax_enabled === '1' ? 'grid' : 'none' ?>;grid-template-columns:1fr 1fr;gap:14px;">
+                <div id="taxFields" style="display:<?= $tax_enabled === '1' ? 'grid' : 'none' ?>;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
-                        <div style="font-size:12.5px;font-weight:500;color:var(--muted);margin-bottom:7px;">CGST Rate (%)</div>
+                        <div class="form-label-custom">CGST Rate (%)</div>
                         <input type="number" name="cgst_rate" class="input-custom" min="0" max="28" step="0.5" value="<?= htmlspecialchars($cgst_rate) ?>" placeholder="9">
-                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Common: 0%, 2.5%, 6%, 9%, 14%</div>
                     </div>
                     <div>
-                        <div style="font-size:12.5px;font-weight:500;color:var(--muted);margin-bottom:7px;">SGST Rate (%)</div>
+                        <div class="form-label-custom">SGST Rate (%)</div>
                         <input type="number" name="sgst_rate" class="input-custom" min="0" max="28" step="0.5" value="<?= htmlspecialchars($sgst_rate) ?>" placeholder="9">
-                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Usually same as CGST rate</div>
                     </div>
                 </div>
-                <div style="background:rgba(234,179,8,0.07);border:1px solid rgba(234,179,8,0.2);border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;">
-                    <i class="bi bi-info-circle" style="color:#ca8a04;margin-right:6px;"></i>
-                    If annual turnover &lt; ₹40 lakhs (goods) or ₹20 lakhs (services), GST registration is not mandatory. Keep tax at 0%.
-                </div>
-                <button type="submit" class="btn-primary-custom" style="justify-content:center;padding:12px;">
-                    <i class="bi bi-save"></i> Save Tax Settings
+                <button type="submit" class="btn-primary-custom" style="justify-content:center;padding:10px;">
+                    <i class="bi bi-check-lg"></i> Save Tax Configuration
                 </button>
             </div>
         </form>
@@ -350,19 +342,19 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
 <!-- ═══════════════════════════════════════════════════
      RAZORPAY PAYMENT SETTINGS CARD
      ═══════════════════════════════════════════════════ -->
-<div style="margin-top:24px;" class="animate-in d3">
-    <div class="card-glass" style="border-color:rgba(0,123,255,0.15);">
+<div style="margin-top:20px;" class="animate-in d3">
+    <div class="card-glass">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-            <div style="width:36px;height:36px;border-radius:8px;background:rgba(0,123,255,0.1);display:flex;align-items:center;justify-content:center;">
-                <i class="bi bi-credit-card-2-front" style="color:#0d6efd;font-size:18px;"></i>
+            <div style="width:36px;height:36px;border-radius:8px;background:#F0F9FF;border:1px solid #BAE6FD;display:flex;align-items:center;justify-content:center;">
+                <i class="bi bi-credit-card-2-front" style="color:#0EA5E9;font-size:18px;"></i>
             </div>
             <div>
-                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;">Online Payment — Razorpay</div>
-                <div style="font-size:12.5px;color:var(--muted);">Accept UPI, Cards, Net Banking &amp; Wallets from your customers</div>
+                <div style="font-weight:700;font-size:16px;color:var(--text-primary);">Online Payment Gateway (Razorpay)</div>
+                <div style="font-size:12px;color:var(--text-muted);">Accept UPI, Cards, Net Banking &amp; Wallets directly into your account</div>
             </div>
-            <span style="margin-left:auto;font-size:11px;font-weight:700;background:#072654;color:#fff;padding:4px 10px;border-radius:5px;letter-spacing:0.5px;">RAZORPAY</span>
+            <span style="margin-left:auto;font-size:11px;font-weight:700;background:#0F172A;color:#fff;padding:3px 8px;border-radius:4px;">RAZORPAY</span>
         </div>
-        <hr style="border-color:var(--card-border);margin:16px 0;">
+        <hr style="border-color:#E2E8F0;margin:14px 0;">
 
         <?php
         $rz = [
@@ -372,46 +364,42 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
         ];
         ?>
 
-        <!-- Status badge -->
         <?php if ($rz['enabled'] === '1' && !empty($rz['key_id'])): ?>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#16a34a;padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;margin-bottom:16px;">
-            <span style="width:7px;height:7px;background:#16a34a;border-radius:50%;display:inline-block;"></span>
-            Online payments active
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#ECFDF5;border:1px solid #A7F3D0;color:#047857;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:14px;">
+            <span style="width:6px;height:6px;background:#059669;border-radius:50%;display:inline-block;"></span>
+            Online Payments Active
         </div>
         <?php else: ?>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.2);color:var(--muted);padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;margin-bottom:16px;">
-            <span style="width:7px;height:7px;background:var(--muted);border-radius:50%;display:inline-block;"></span>
-            Not enabled — only COD available
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#F1F5F9;border:1px solid #E2E8F0;color:var(--text-muted);padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:14px;">
+            <span style="width:6px;height:6px;background:var(--text-muted);border-radius:50%;display:inline-block;"></span>
+            Inactive — Cash on Delivery (COD) Only
         </div>
         <?php endif; ?>
 
         <form method="POST">
             <input type="hidden" name="action" value="update_razorpay">
-            <div style="display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;flex-direction:column;gap:14px;">
 
-                <!-- Enable toggle -->
-                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:var(--radius-sm);">
                     <input type="checkbox" name="razorpay_enabled" value="1" id="rzToggle"
                         <?= $rz['enabled'] === '1' ? 'checked' : '' ?>
                         onchange="document.getElementById('rzFields').style.display=this.checked?'flex':'none'"
-                        style="width:18px;height:18px;accent-color:#0d6efd;flex-shrink:0;">
+                        style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;">
                     <div>
-                        <div style="font-weight:600;font-size:14px;">Enable Razorpay for my shop</div>
-                        <div style="font-size:12px;color:var(--muted);margin-top:1px;">Customers will see "Pay Online" option at checkout</div>
+                        <div style="font-weight:600;font-size:13.5px;color:var(--text-primary);">Enable Razorpay online payments</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:1px;">Customers can select "Pay Online" at checkout</div>
                     </div>
                 </label>
 
-                <!-- Key fields (hidden when disabled) -->
-                <div id="rzFields" style="display:<?= $rz['enabled'] === '1' ? 'flex' : 'none' ?>;flex-direction:column;gap:14px;">
+                <div id="rzFields" style="display:<?= $rz['enabled'] === '1' ? 'flex' : 'none' ?>;flex-direction:column;gap:12px;">
 
-                    <div style="background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.25);border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;color:var(--text);">
-                        <i class="bi bi-info-circle" style="color:#d97706;margin-right:6px;"></i>
-                        Get your keys from <a href="https://dashboard.razorpay.com/app/keys" target="_blank" style="color:#0d6efd;font-weight:600;">Razorpay Dashboard → Settings → API Keys</a>.
-                        Use <strong>Test keys</strong> first, switch to <strong>Live keys</strong> when ready.
+                    <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:#0369A1;">
+                        <i class="bi bi-info-circle-fill" style="margin-right:4px;"></i>
+                        Retrieve API keys from your <a href="https://dashboard.razorpay.com/app/keys" target="_blank" style="color:var(--primary);font-weight:700;">Razorpay Dashboard &rarr; Settings &rarr; API Keys</a>.
                     </div>
 
                     <div>
-                        <div style="font-size:12.5px;font-weight:500;color:var(--muted);margin-bottom:7px;">Key ID <span style="color:#888;">(starts with rzp_test_ or rzp_live_)</span></div>
+                        <div class="form-label-custom">Key ID (starts with rzp_test_ or rzp_live_)</div>
                         <input type="text" name="razorpay_key_id" class="input-custom"
                             placeholder="rzp_live_xxxxxxxxxxxx"
                             value="<?= htmlspecialchars($rz['key_id']) ?>"
@@ -419,30 +407,23 @@ while ($r = $sr->fetch_assoc()) $settings[$r['setting_key']] = $r['setting_value
                     </div>
 
                     <div>
-                        <div style="font-size:12.5px;font-weight:500;color:var(--muted);margin-bottom:7px;">Key Secret <span style="color:#e74c3c;">⚠ Never share this</span></div>
+                        <div class="form-label-custom">Key Secret</div>
                         <div style="position:relative;">
                             <input type="password" name="razorpay_key_secret" id="rzSecret" class="input-custom"
                                 placeholder="Your Razorpay secret key"
                                 value="<?= htmlspecialchars($rz['secret']) ?>"
                                 autocomplete="new-password"
-                                style="padding-right:44px;">
+                                style="padding-right:40px;">
                             <button type="button" onclick="toggleSecret()"
-                                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;" title="Show/hide">
+                                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:15px;" title="Show/hide">
                                 <i class="bi bi-eye" id="rzEyeIcon"></i>
                             </button>
                         </div>
                     </div>
-
-                    <?php if (!empty($rz['key_id'])): ?>
-                    <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;">
-                        <i class="bi bi-check-circle" style="color:#16a34a;margin-right:5px;"></i>
-                        Keys saved. Mode: <strong><?= str_contains($rz['key_id'], '_test_') ? '🧪 Test Mode' : '🟢 Live Mode' ?></strong>
-                    </div>
-                    <?php endif; ?>
                 </div>
 
-                <button type="submit" class="btn-primary-custom" style="justify-content:center;padding:12px;">
-                    <i class="bi bi-save"></i> Save Payment Settings
+                <button type="submit" class="btn-primary-custom" style="justify-content:center;padding:10px;">
+                    <i class="bi bi-check-lg"></i> Save Payment Configuration
                 </button>
             </div>
         </form>

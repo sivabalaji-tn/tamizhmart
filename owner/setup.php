@@ -52,9 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
 
     } elseif ($action === 'step3') { // Theme
-        $primary   = $_POST['primary'] ?? '#c8a97e';
-        $secondary = $_POST['secondary'] ?? '#8b6428';
-        $bg        = $_POST['bg'] ?? '#faf7f2';
+        $primary   = $_POST['primary'] ?? '#2563eb';
+        $secondary = $_POST['secondary'] ?? '#1d4ed8';
+        $bg        = $_POST['bg'] ?? '#f8fafc';
         $font      = $_POST['font'] ?? 'Poppins';
         $stmt = $conn->prepare("UPDATE shops SET theme_primary=?, theme_secondary=?, theme_bg=?, theme_font=? WHERE id=?");
         $stmt->bind_param("ssssi", $primary, $secondary, $bg, $font, $shop_id);
@@ -63,14 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
 
     } elseif ($action === 'step4') { // First category + product
-        // Guard: only run if setup is NOT already complete
         $already = $conn->query("SELECT setting_value FROM shop_settings WHERE shop_id=$shop_id AND setting_key='setup_complete'")->fetch_assoc();
         if ($already && $already['setting_value'] === '1') {
             header("Location: dashboard.php"); exit;
         }
         $cat_name = trim($_POST['category_name'] ?? '');
         if ($cat_name) {
-            // Only insert category if it doesn't already exist for this shop with this name
             $existing_cat = $conn->query("SELECT id FROM categories WHERE shop_id=$shop_id AND name='".addslashes($cat_name)."' LIMIT 1")->fetch_assoc();
             if ($existing_cat) {
                 $cat_id = $existing_cat['id'];
@@ -85,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prod_price = (float)($_POST['product_price'] ?? 0);
             $prod_stock = (int)($_POST['product_stock'] ?? 10);
             if ($prod_name && $prod_price > 0) {
-                // Only insert product if no products exist yet for this shop
                 $existing_prod = $conn->query("SELECT id FROM products WHERE shop_id=$shop_id LIMIT 1")->fetch_assoc();
                 if (!$existing_prod) {
                     $stmt2 = $conn->prepare("INSERT INTO products (shop_id, category_id, name, price, stock, is_active) VALUES (?,?,?,?,?,1)");
@@ -115,11 +112,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Refresh shop data
 $shop = $conn->query("SELECT * FROM shops WHERE id=$shop_id")->fetch_assoc();
 $steps_info = [
-    1 => ['icon'=>'shop',        'title'=>'Shop Info',    'desc'=>'Name & description'],
-    2 => ['icon'=>'image',       'title'=>'Logo',         'desc'=>'Upload your brand logo'],
-    3 => ['icon'=>'palette2',    'title'=>'Theme',        'desc'=>'Pick your colors'],
-    4 => ['icon'=>'box-seam',    'title'=>'First Product','desc'=>'Add a category & product'],
-    5 => ['icon'=>'check-circle','title'=>'Finish',       'desc'=>'Final touches'],
+    1 => ['icon'=>'shop',        'title'=>'Shop Profile', 'desc'=>'Name & description'],
+    2 => ['icon'=>'image',       'title'=>'Store Logo',   'desc'=>'Upload brand logo'],
+    3 => ['icon'=>'palette2',    'title'=>'Theme',        'desc'=>'Select brand colors'],
+    4 => ['icon'=>'box-seam',    'title'=>'Catalog',      'desc'=>'Add category & product'],
+    5 => ['icon'=>'check-circle','title'=>'Launch',       'desc'=>'Final touches'],
 ];
 ?>
 <!DOCTYPE html>
@@ -127,147 +124,203 @@ $steps_info = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Your Shop &mdash; TamizhMart</title>
+    <title>Store Onboarding Wizard &mdash; TamizhMart</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --accent: #c8a97e;
-            --accent-dim: rgba(200,169,126,0.12);
-            --bg: #0d0b08;
-            --card: rgba(255,255,255,0.04);
-            --border: rgba(255,255,255,0.08);
-            --text: #f0ece4;
-            --muted: rgba(240,236,228,0.45);
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --border-color: #CBD5E1;
+            --text-primary: #1E293B;
+            --text-muted: #64748B;
+            --primary: #2563EB;
+            --primary-hover: #1D4ED8;
         }
-        body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-        .bg-mesh {
-            position:fixed; inset:0; z-index:0;
-            background:
-                radial-gradient(ellipse 60% 60% at 10% 10%, rgba(200,169,126,0.1) 0%, transparent 55%),
-                radial-gradient(ellipse 60% 60% at 90% 90%, rgba(100,60,20,0.08) 0%, transparent 55%),
-                var(--bg);
-        }
-        .setup-wrap { position:relative; z-index:1; max-width:640px; margin:0 auto; padding:40px 24px 60px; }
 
-        /* Progress */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .setup-wrap {
+            max-width: 660px;
+            margin: 0 auto;
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+
+        .brand-badge-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
         .progress-bar-wrap {
-            display:flex; gap:0; margin-bottom:44px;
-            background:var(--card); border:1px solid var(--border);
-            border-radius:16px; padding:6px;
+            display: flex;
+            gap: 4px;
+            margin-bottom: 32px;
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
+
         .progress-step {
-            flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;
-            padding:12px 8px; border-radius:12px; cursor:default;
-            transition:all 0.25s;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 4px;
+            border-radius: 8px;
         }
-        .progress-step.done  { background:var(--accent-dim); }
-        .progress-step.active { background:linear-gradient(135deg,rgba(200,169,126,0.2),rgba(200,169,126,0.08)); }
+
+        .progress-step.done { background: #ECFDF5; }
+        .progress-step.active { background: #EFF6FF; }
+
         .step-dot {
-            width:32px; height:32px; border-radius:50%;
-            display:flex; align-items:center; justify-content:center;
-            font-size:14px; transition:all 0.25s;
-            border:1.5px solid var(--border);
-            color:var(--muted);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12.5px;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            background: #FFFFFF;
         }
-        .progress-step.done  .step-dot { background:var(--accent); border-color:var(--accent); color:#fff; }
-        .progress-step.active .step-dot { border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 4px rgba(200,169,126,0.15); }
-        .step-label { font-size:11px; color:var(--muted); text-align:center; font-weight:500; }
-        .progress-step.active .step-label, .progress-step.done .step-label { color:var(--accent); }
 
-        /* Card */
+        .progress-step.done .step-dot { background: #10B981; border-color: #10B981; color: #FFFFFF; }
+        .progress-step.active .step-dot { background: var(--primary); border-color: var(--primary); color: #FFFFFF; }
+
+        .step-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-align: center; }
+        .progress-step.active .step-label { color: var(--primary); }
+        .progress-step.done .step-label { color: #047857; }
+
         .setup-card {
-            background:var(--card); border:1px solid var(--border);
-            border-radius:20px; padding:36px;
-            animation: fadeUp 0.4s ease;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 36px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-        .setup-title { font-family:'Syne',sans-serif; font-weight:800; font-size:26px; letter-spacing:-0.6px; margin-bottom:8px; }
-        .setup-sub   { font-size:14.5px; color:var(--muted); margin-bottom:28px; line-height:1.6; }
 
-        /* Form */
-        .form-label { font-size:12.5px; font-weight:500; color:var(--muted); margin-bottom:7px; letter-spacing:0.3px; }
-        .input {
-            width:100%; padding:12px 16px;
-            background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
-            border-radius:10px; color:var(--text); font-family:'DM Sans',sans-serif;
-            font-size:14px; outline:none; transition:all 0.2s;
+        .setup-title { font-weight: 800; font-size: 22px; color: var(--text-primary); margin-bottom: 6px; }
+        .setup-sub { font-size: 13.5px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+
+        .form-label-custom { font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+        .input-custom {
+            width: 100%;
+            padding: 10px 12px;
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13.5px;
+            outline: none;
+            transition: border-color 0.15s ease-in-out;
         }
-        .input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(200,169,126,0.12); background:rgba(200,169,126,0.05); }
-        .input::placeholder { color:var(--muted); }
-        textarea.input { resize:vertical; min-height:90px; }
+        .input-custom:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        textarea.input-custom { resize: vertical; min-height: 80px; }
 
         .btn-next {
-            display:inline-flex; align-items:center; gap:8px;
-            padding:13px 28px;
-            background:linear-gradient(135deg,var(--accent),#8b6428);
-            border:none; border-radius:12px;
-            color:#fff; font-family:'Syne',sans-serif; font-weight:700; font-size:14px;
-            cursor:pointer; transition:all 0.2s;
-            box-shadow:0 4px 20px rgba(200,169,126,0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 22px;
+            background: var(--primary);
+            border: none;
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: background 0.15s ease-in-out;
         }
-        .btn-next:hover { filter:brightness(1.1); transform:translateY(-1px); }
+        .btn-next:hover { background: var(--primary-hover); }
+
         .btn-skip {
-            display:inline-flex; align-items:center; gap:6px;
-            padding:12px 22px;
-            background:transparent; border:1px solid var(--border);
-            border-radius:12px; color:var(--muted);
-            font-family:'DM Sans',sans-serif; font-size:14px;
-            cursor:pointer; text-decoration:none; transition:all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 13.5px;
+            text-decoration: none;
+            font-weight: 600;
         }
-        .btn-skip:hover { background:rgba(255,255,255,0.05); color:var(--text); }
+        .btn-skip:hover { background: #F8FAFC; color: var(--text-primary); }
 
-        /* Color pickers */
-        .color-row { display:flex; gap:12px; flex-wrap:wrap; }
-        .color-pick { display:flex; flex-direction:column; align-items:center; gap:8px; }
-        .color-pick input[type=color] {
-            width:52px; height:52px; border-radius:12px;
-            border:1px solid var(--border); padding:2px;
-            background:none; cursor:pointer;
-        }
-        .color-pick span { font-size:12px; color:var(--muted); }
+        .color-row { display: flex; gap: 14px; flex-wrap: wrap; }
+        .color-pick { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .color-pick input[type=color] { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; padding: 2px; }
+        .color-pick span { font-size: 12px; color: var(--text-muted); font-weight: 500; }
 
-        /* Font grid */
-        .font-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .font-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .font-opt {
-            padding:12px 14px; border-radius:10px;
-            border:1.5px solid var(--border);
-            cursor:pointer; transition:all 0.2s;
-            display:flex; align-items:center; gap:10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #FFFFFF;
         }
-        .font-opt input[type=radio] { accent-color:var(--accent); }
-        .font-opt:has(input:checked) { border-color:var(--accent); background:var(--accent-dim); }
+        .font-opt input[type=radio] { accent-color: var(--primary); }
 
-        /* Upload zone */
         .upload-zone {
-            border:2px dashed var(--border); border-radius:14px;
-            padding:36px 20px; text-align:center; cursor:pointer;
-            transition:all 0.2s; position:relative;
+            border: 2px dashed var(--border-color);
+            background: #F8FAFC;
+            border-radius: 8px;
+            padding: 32px 20px;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
         }
-        .upload-zone:hover { border-color:var(--accent); background:var(--accent-dim); }
-        .upload-zone input[type=file] {
-            position:absolute; inset:0; opacity:0; cursor:pointer;
-        }
-        .upload-zone i { font-size:36px; color:var(--accent); margin-bottom:10px; display:block; }
-        .upload-zone p { font-size:13.5px; color:var(--muted); }
-
-        /* Success animation */
-        .confetti-wrap { text-align:center; padding:20px 0; }
-        .confetti-icon { font-size:64px; animation:bounce 0.6s cubic-bezier(0.34,1.56,0.64,1); display:inline-block; }
-        @keyframes bounce { from{transform:scale(0)} to{transform:scale(1)} }
+        .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .upload-zone i { font-size: 32px; color: var(--primary); margin-bottom: 8px; display: block; }
     </style>
 </head>
 <body>
-<div class="bg-mesh"></div>
+
 <div class="setup-wrap">
 
-    <!-- Logo -->
-    <div style="text-align:center;margin-bottom:28px;">
-        <div style="display:inline-flex;align-items:center;gap:10px;">
-            <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#8b6428);display:flex;align-items:center;justify-content:center;font-size:18px;">🛍</div>
-            <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;">TamizhMart Setup</span>
+    <!-- Header Logo -->
+    <div class="brand-header">
+        <div class="brand-badge">
+            <div class="brand-badge-icon"><i class="bi bi-shop"></i></div>
+            <span>TamizhMart Store Onboarding</span>
         </div>
     </div>
 
@@ -287,152 +340,133 @@ $steps_info = [
         <?php endforeach; ?>
     </div>
 
-    <!-- Step Content -->
+    <!-- Step Card -->
     <div class="setup-card">
 
     <?php if ($step === 1): ?>
-        <div class="setup-title">Let's set up your shop 🚀</div>
-        <p class="setup-sub">Start with the basics — what's your shop called and what do you sell?</p>
-        <form method="POST" style="display:grid;gap:16px;">
+        <div class="setup-title">Step 1: Store Information</div>
+        <p class="setup-sub">Enter basic shop details visible to your customers.</p>
+        <form method="POST" style="display:grid;gap:14px;">
             <input type="hidden" name="action" value="step1">
             <div>
-                <div class="form-label">Shop Name *</div>
-                <input type="text" name="name" class="input" value="<?= htmlspecialchars($shop['name']) ?>" placeholder="e.g. Priya's Bakery, Fresh Mart..." required>
+                <div class="form-label-custom">Shop Name *</div>
+                <input type="text" name="name" class="input-custom" value="<?= htmlspecialchars($shop['name']) ?>" required>
             </div>
             <div>
-                <div class="form-label">Shop Description</div>
-                <textarea name="description" class="input" placeholder="Tell your customers what you offer..."><?= htmlspecialchars($shop['description'] ?? '') ?></textarea>
+                <div class="form-label-custom">Description</div>
+                <textarea name="description" class="input-custom" placeholder="Describe your store and products..."><?= htmlspecialchars($shop['description'] ?? '') ?></textarea>
             </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-                <button type="submit" class="btn-next">Next <i class="bi bi-arrow-right"></i></button>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+                <button type="submit" class="btn-next">Next Step &rarr;</button>
             </div>
         </form>
 
     <?php elseif ($step === 2): ?>
-        <div class="setup-title">Upload your logo</div>
-        <p class="setup-sub">A great logo builds trust. You can always change this later in Settings.</p>
-        <form method="POST" enctype="multipart/form-data" style="display:grid;gap:20px;">
+        <div class="setup-title">Step 2: Brand Logo</div>
+        <p class="setup-sub">Upload your store logo to personalize header and customer receipts.</p>
+        <form method="POST" enctype="multipart/form-data" style="display:grid;gap:18px;">
             <input type="hidden" name="action" value="step2">
-            <div class="upload-zone" id="uploadZone">
+            <div class="upload-zone">
                 <input type="file" name="logo" accept="image/*" onchange="previewLogo(this)">
                 <i class="bi bi-cloud-upload" id="uploadIcon"></i>
-                <p id="uploadText">Click to upload or drag &amp; drop<br><span style="font-size:12px;">PNG, JPG or WEBP &middot; max 5MB</span></p>
-                <img id="logoPreview" style="display:none;max-height:100px;border-radius:10px;margin-top:12px;">
+                <p id="uploadText" style="font-size:13px;color:var(--text-muted);">Click to upload or drag logo file here<br><span style="font-size:11.5px;">PNG, JPG or WEBP &middot; max 5MB</span></p>
+                <img id="logoPreview" style="display:none;max-height:90px;border-radius:6px;margin:10px auto 0;">
             </div>
-            <div style="display:flex;gap:10px;justify-content:space-between;">
-                <a href="setup.php?step=3" class="btn-skip">Skip for now</a>
-                <button type="submit" class="btn-next">Next <i class="bi bi-arrow-right"></i></button>
+            <div style="display:flex;justify-content:space-between;">
+                <a href="setup.php?step=3" class="btn-skip">Skip For Now</a>
+                <button type="submit" class="btn-next">Next Step &rarr;</button>
             </div>
         </form>
 
     <?php elseif ($step === 3): ?>
-        <div class="setup-title">Choose your theme 🎨</div>
-        <p class="setup-sub">Pick colors and a font that match your brand. Your shop will update instantly.</p>
-        <form method="POST" style="display:grid;gap:20px;">
+        <div class="setup-title">Step 3: Theme Customization</div>
+        <p class="setup-sub">Choose primary brand colors and typography for your storefront.</p>
+        <form method="POST" style="display:grid;gap:18px;">
             <input type="hidden" name="action" value="step3">
             <div>
-                <div class="form-label" style="margin-bottom:12px;">Brand Colors</div>
+                <div class="form-label-custom" style="margin-bottom:10px;">Brand Color Palette</div>
                 <div class="color-row">
                     <div class="color-pick">
-                        <input type="color" name="primary"   value="<?= $shop['theme_primary'] ?? '#c8a97e' ?>">
+                        <input type="color" name="primary" value="<?= $shop['theme_primary'] ?? '#2563eb' ?>">
                         <span>Primary</span>
                     </div>
                     <div class="color-pick">
-                        <input type="color" name="secondary" value="<?= $shop['theme_secondary'] ?? '#8b6428' ?>">
+                        <input type="color" name="secondary" value="<?= $shop['theme_secondary'] ?? '#1d4ed8' ?>">
                         <span>Secondary</span>
                     </div>
                     <div class="color-pick">
-                        <input type="color" name="bg"        value="<?= $shop['theme_bg'] ?? '#faf7f2' ?>">
+                        <input type="color" name="bg" value="<?= $shop['theme_bg'] ?? '#f8fafc' ?>">
                         <span>Background</span>
                     </div>
                 </div>
             </div>
             <div>
-                <div class="form-label" style="margin-bottom:12px;">Font Style</div>
+                <div class="form-label-custom" style="margin-bottom:10px;">Font Family</div>
                 <div class="font-grid">
-                    <?php
-                    $fonts = ['Poppins'=>'Poppins','DM Sans'=>'DM Sans','Syne'=>'Syne','Nunito'=>'Nunito'];
-                    foreach ($fonts as $val => $label):
-                    ?>
+                    <?php foreach (['Poppins'=>'Poppins','DM Sans'=>'DM Sans','Syne'=>'Syne','Nunito'=>'Nunito'] as $val => $label): ?>
                     <label class="font-opt">
                         <input type="radio" name="font" value="<?= $val ?>" <?= ($shop['theme_font'] ?? 'Poppins') === $val ? 'checked' : '' ?>>
-                        <span style="font-family:'<?= $val ?>',sans-serif;font-size:14px;font-weight:600;"><?= $label ?></span>
+                        <span style="font-family:'<?= $val ?>',sans-serif;font-size:13px;font-weight:600;"><?= $label ?></span>
                     </label>
                     <?php endforeach; ?>
                 </div>
             </div>
-            <div style="display:flex;gap:10px;justify-content:space-between;">
+            <div style="display:flex;justify-content:space-between;">
                 <a href="setup.php?step=4" class="btn-skip">Skip</a>
-                <button type="submit" class="btn-next">Next <i class="bi bi-arrow-right"></i></button>
+                <button type="submit" class="btn-next">Next Step &rarr;</button>
             </div>
         </form>
 
     <?php elseif ($step === 4): ?>
-        <div class="setup-title">Add your first product 📦</div>
-        <p class="setup-sub">Create a category and add your first product to start selling right away.</p>
-        <form method="POST" style="display:grid;gap:16px;">
+        <div class="setup-title">Step 4: Initial Catalog</div>
+        <p class="setup-sub">Add your first category and product to populate your catalog.</p>
+        <form method="POST" style="display:grid;gap:14px;">
             <input type="hidden" name="action" value="step4">
-            <div style="padding:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;">
-                <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:12px;">Category</div>
-                <div class="form-label">Category Name</div>
-                <input type="text" name="category_name" class="input" placeholder="e.g. Cakes, Beverages, Snacks...">
+            <div style="padding:14px;background:#F8FAFC;border:1px solid var(--border-color);border-radius:8px;">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--primary);margin-bottom:8px;">First Category</div>
+                <input type="text" name="category_name" class="input-custom" placeholder="e.g. Beverages, Bakery, Accessories...">
             </div>
-            <div style="padding:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;">
-                <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:12px;">First Product</div>
-                <div style="display:grid;gap:12px;">
-                    <div>
-                        <div class="form-label">Product Name</div>
-                        <input type="text" name="product_name" class="input" placeholder="e.g. Chocolate Truffle Cake">
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div>
-                            <div class="form-label">Price (₹)</div>
-                            <input type="number" name="product_price" class="input" placeholder="0.00" step="0.01">
-                        </div>
-                        <div>
-                            <div class="form-label">Stock</div>
-                            <input type="number" name="product_stock" class="input" placeholder="10" value="10">
-                        </div>
+            <div style="padding:14px;background:#F8FAFC;border:1px solid var(--border-color);border-radius:8px;">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--primary);margin-bottom:8px;">First Product</div>
+                <div style="display:grid;gap:10px;">
+                    <input type="text" name="product_name" class="input-custom" placeholder="Product Title">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <input type="number" name="product_price" class="input-custom" placeholder="Price (₹)" step="0.01">
+                        <input type="number" name="product_stock" class="input-custom" placeholder="Stock Qty" value="10">
                     </div>
                 </div>
             </div>
-            <div style="display:flex;gap:10px;justify-content:space-between;">
+            <div style="display:flex;justify-content:space-between;">
                 <a href="setup.php?step=5" class="btn-skip">Skip</a>
-                <button type="submit" class="btn-next">Next <i class="bi bi-arrow-right"></i></button>
+                <button type="submit" class="btn-next">Next Step &rarr;</button>
             </div>
         </form>
 
     <?php elseif ($step === 5): ?>
-        <div class="confetti-wrap">
-            <div class="confetti-icon">🎉</div>
+        <div style="text-align:center;padding:10px 0 20px;">
+            <div style="font-size:48px;margin-bottom:10px;">🚀</div>
+            <div class="setup-title">Store Ready to Launch!</div>
+            <p class="setup-sub">Add optional contact info and announcement banner to complete setup.</p>
         </div>
-        <div class="setup-title" style="text-align:center;">Almost there!</div>
-        <p class="setup-sub" style="text-align:center;">Just a couple final touches before we launch your shop.</p>
-        <form method="POST" style="display:grid;gap:16px;">
+        <form method="POST" style="display:grid;gap:14px;">
             <input type="hidden" name="action" value="complete">
             <div>
-                <div class="form-label">Announcement Bar Message</div>
-                <input type="text" name="announcement" class="input" placeholder="e.g. 🎉 Free delivery on orders above ₹500!">
-                <div style="font-size:12px;color:var(--muted);margin-top:5px;">Shown as a banner on top of your shop. Leave empty to skip.</div>
+                <div class="form-label-custom">Announcement Banner (optional)</div>
+                <input type="text" name="announcement" class="input-custom" placeholder="e.g. Free shipping on orders above ₹499!">
             </div>
             <div>
-                <div class="form-label">Shop Phone Number</div>
-                <input type="text" name="phone" class="input" placeholder="+91 00000 00000">
+                <div class="form-label-custom">Support Phone</div>
+                <input type="text" name="phone" class="input-custom" placeholder="+91 00000 00000">
             </div>
-            <div style="background:var(--accent-dim);border:1px solid rgba(200,169,126,0.2);border-radius:12px;padding:16px;margin-top:4px;">
-                <div style="font-size:13.5px;font-weight:600;margin-bottom:6px;">Your shop URL 🔗</div>
-                <code style="font-size:13px;color:var(--accent);">localhost/tamizhmart/shop/index.php?shop=<?= htmlspecialchars($shop['slug']) ?></code>
-            </div>
-            <button type="submit" class="btn-next" style="width:100%;justify-content:center;padding:15px;font-size:15px;margin-top:8px;">
-                <i class="bi bi-rocket-takeoff"></i> Launch My Shop!
+            <button type="submit" class="btn-next" style="width:100%;justify-content:center;padding:12px;font-size:14px;">
+                <i class="bi bi-shop"></i> Launch Seller Console
             </button>
         </form>
     <?php endif; ?>
 
     </div>
 
-    <!-- Step indicator -->
-    <div style="text-align:center;margin-top:20px;font-size:12.5px;color:var(--muted);">
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted);">
         Step <?= $step ?> of 5
     </div>
 </div>

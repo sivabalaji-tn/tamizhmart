@@ -123,5 +123,86 @@ document.getElementById('shopPopup')?.addEventListener('click', function(e) {
 });
 </script>
 <?php if (isset($extra_js)) echo $extra_js; ?>
+
+<?php if (!empty($_SESSION['show_profile_tour'])): ?>
+<?php unset($_SESSION['show_profile_tour']); ?>
+<!-- ── Profile Completion Tour (shown once after Google signup) ── -->
+<div id="profileTourOverlay" style="
+    position:fixed;inset:0;z-index:99999;
+    background:rgba(0,0,0,0.65);
+    backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    animation:fadeInOverlay 0.4s ease;">
+<style>
+@keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}
+@keyframes slideUpTour{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
+#profileTourCard{
+    background:#fff;border-radius:20px;padding:36px 32px;max-width:420px;width:100%;
+    position:relative;box-shadow:0 24px 60px rgba(0,0,0,0.3);
+    animation:slideUpTour 0.45s cubic-bezier(.22,.68,0,1.2) forwards;
+    font-family:'Inter','DM Sans',sans-serif;
+}
+.ptour-icon{width:64px;height:64px;border-radius:16px;
+    background:linear-gradient(135deg,#f97316,#fb923c);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 20px;font-size:28px;color:#fff;box-shadow:0 8px 24px rgba(249,115,22,0.35);}
+.ptour-title{font-size:19px;font-weight:700;color:#1e293b;text-align:center;margin-bottom:8px;letter-spacing:-0.4px;}
+.ptour-sub{font-size:13.5px;color:#64748b;text-align:center;line-height:1.6;margin-bottom:24px;}
+.ptour-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.ptour-step{display:flex;align-items:center;gap:12px;background:#f8fafc;
+    border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;}
+.ptour-step-icon{width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,#2563eb,#3b82f6);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0;}
+.ptour-step-text strong{display:block;font-size:13px;font-weight:600;color:#1e293b;}
+.ptour-step-text span{font-size:12px;color:#94a3b8;}
+.ptour-btn-go{width:100%;padding:13px;background:linear-gradient(135deg,#f97316,#ea580c);
+    border:none;border-radius:12px;color:#fff;font-size:14.5px;font-weight:700;
+    cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;
+    box-shadow:0 4px 16px rgba(249,115,22,0.35);margin-bottom:10px;}
+.ptour-btn-go:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(249,115,22,0.45);}
+.ptour-btn-skip{width:100%;padding:10px;background:transparent;border:none;
+    color:#94a3b8;font-size:13px;cursor:pointer;transition:color 0.2s;}
+.ptour-btn-skip:hover{color:#64748b;}
+</style>
+<div id="profileTourCard">
+    <button onclick="dismissTour()" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:20px;line-height:1;" title="Close">&#10005;</button>
+    <div class="ptour-icon">&#127881;</div>
+    <div class="ptour-title">Welcome, <?= htmlspecialchars($_SESSION['user_name'] ?? 'there') ?>!</div>
+    <div class="ptour-sub">Your account is ready. Complete your profile so we can deliver orders to the right place.</div>
+    <div class="ptour-steps">
+        <div class="ptour-step">
+            <div class="ptour-step-icon"><i class="bi bi-telephone-fill"></i></div>
+            <div class="ptour-step-text">
+                <strong>Phone Number</strong>
+                <span>For order updates &amp; delivery confirmation</span>
+            </div>
+        </div>
+        <div class="ptour-step">
+            <div class="ptour-step-icon"><i class="bi bi-geo-alt-fill"></i></div>
+            <div class="ptour-step-text">
+                <strong>Delivery Address</strong>
+                <span>So we know exactly where to deliver</span>
+            </div>
+        </div>
+    </div>
+    <button class="ptour-btn-go" onclick="goToProfile()">
+        <i class="bi bi-person-fill me-2"></i>Complete My Profile
+    </button>
+    <button class="ptour-btn-skip" onclick="dismissTour()">I'll do this later</button>
+</div>
+</div>
+<script>
+function dismissTour() {
+    const el = document.getElementById('profileTourOverlay');
+    if (el) { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }
+}
+function goToProfile() {
+    dismissTour();
+    window.location.href = 'profile.php?shop=<?= htmlspecialchars($slug ?? '') ?>';
+}
+</script>
+<?php endif; ?>
+
 </body>
 </html>

@@ -1,7 +1,7 @@
 <?php
 session_start();
 require '../config/db.php';
-
+require_once 'google_oauth_init.php';
 
 if (isset($_SESSION['user_id'])) {
     header("Location: ../shop/index.php");
@@ -18,8 +18,12 @@ if ($shop_slug) {
     $shop = $stmt->get_result()->fetch_assoc();
 }
 
-$error = '';
+$error   = '';
 $success = false;
+
+// Notice from Google callback: user tried to login but has no account
+$notice      = $_GET['notice']       ?? '';
+$google_email = htmlspecialchars($_GET['google_email'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $shop) {
     $name     = trim($_POST['name']);
@@ -47,6 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $shop) {
 
 $primary = $shop['theme_primary'] ?? '#c8a97e';
 $font    = $shop['theme_font']    ?? 'Inter';
+
+// Pre-generate Google OAuth URL (register flow — will create account if not exists)
+$google_url = $shop ? google_oauth_url($shop['slug'], 'register') : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -243,6 +250,30 @@ $font    = $shop['theme_font']    ?? 'Inter';
         .d3 { animation-delay:0.2s; }  .d4 { animation-delay:0.28s; }
 
         @media (max-width: 520px) { .glass-card { padding: 28px 20px; } }
+
+        /* ── Google OAuth Button ─────────────────────────────── */
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 22px 0 18px; font-size: 12px; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--glass-border);
+        }
+        .btn-google {
+            width: 100%; display: flex; align-items: center;
+            justify-content: center; gap: 10px; padding: 13px 16px;
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; color: var(--text); font-family: inherit;
+            font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none;
+            transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .btn-google:hover {
+            background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.28);
+            transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); color: #fff;
+        }
+        .btn-google:active { transform: translateY(0); }
+        .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -279,6 +310,16 @@ $font    = $shop['theme_font']    ?? 'Inter';
         <div class="alert-custom alert-error">
             <i class="bi bi-exclamation-circle-fill"></i>
             <?= htmlspecialchars($error) ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($notice === 'not_registered'): ?>
+        <div class="alert-custom" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;padding:13px 16px;border-radius:11px;font-size:13px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px;animation:slideIn 0.3s ease;">
+            <i class="bi bi-google" style="font-size:16px;margin-top:1px;flex-shrink:0;"></i>
+            <div>
+                <strong>No account found for this Google login.</strong><br>
+                <span style="opacity:0.85;">Create your account below<?= $google_email ? ' — your email <strong>' . $google_email . '</strong> has been pre-filled' : '' ?>. Then use <em>Sign up with Google</em> to finish quickly.</span>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -333,6 +374,20 @@ $font    = $shop['theme_font']    ?? 'Inter';
             </button>
 
         </form>
+
+        <?php if ($google_url && !$success): ?>
+        <div class="divider animate-in d4">or</div>
+
+        <a href="<?= htmlspecialchars($google_url) ?>" class="btn-google animate-in d4" id="googleRegBtn">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Sign up with Google
+        </a>
+        <?php endif; ?>
 
         <?php endif; ?>
 

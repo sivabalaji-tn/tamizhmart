@@ -60,33 +60,33 @@ foreach ($status_tabs as $s) {
 <?php endif; ?>
 
 <!-- ── Status Tabs ── -->
-<div class="animate-in" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;">
+<div class="animate-in" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
     <?php
-    $tab_labels = ['all'=>'All','pending'=>'Pending','confirmed'=>'Confirmed','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
+    $tab_labels = ['all'=>'All Orders','pending'=>'Pending','confirmed'=>'Confirmed','processing'=>'Processing','out_for_delivery'=>'Out for Delivery','delivered'=>'Delivered','cancelled'=>'Cancelled'];
     foreach ($status_tabs as $s):
         $active = $filter_status === $s;
     ?>
     <a href="?status=<?= $s ?>&q=<?= urlencode($search) ?>"
-        style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:99px;font-size:13px;text-decoration:none;border:1px solid;transition:all 0.2s;
-        <?= $active ? 'background:var(--accent-dim);border-color:rgba(200,169,126,0.3);color:var(--accent);font-weight:600;' : 'background:transparent;border-color:var(--card-border);color:var(--muted);' ?>">
+        style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:6px;font-size:12.5px;text-decoration:none;border:1px solid;transition:all 0.15s ease-in-out;
+        <?= $active ? 'background:#1E293B;border-color:#1E293B;color:#FFFFFF;font-weight:600;' : 'background:#FFFFFF;border-color:#CBD5E1;color:var(--text-secondary);' ?>">
         <?= $tab_labels[$s] ?>
-        <span style="background:<?= $active ? 'rgba(200,169,126,0.3)' : 'rgba(255,255,255,0.08)' ?>;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:700;">
+        <span style="background:<?= $active ? 'rgba(255,255,255,0.2)' : '#F1F5F9' ?>;color:<?= $active ? '#FFFFFF' : '#475569' ?>;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700;">
             <?= $status_counts[$s] ?>
         </span>
     </a>
     <?php endforeach; ?>
 </div>
 
-<!-- ── Search & Export ── -->
+<!-- ── Search ── -->
 <div class="card-glass animate-in d2" style="margin-bottom:16px;">
     <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <input type="hidden" name="status" value="<?= htmlspecialchars($filter_status) ?>">
         <div style="position:relative;flex:1;min-width:200px;">
-            <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;"></i>
+            <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;"></i>
             <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" placeholder="Search by customer name or order ID..."
-                class="input-custom" style="padding-left:38px;">
+                class="input-custom" style="padding-left:36px;">
         </div>
-        <button type="submit" class="btn-primary-custom" style="padding:10px 18px;">Search</button>
+        <button type="submit" class="btn-primary-custom"><i class="bi bi-search"></i> Search</button>
         <?php if ($search): ?><a href="?status=<?= $filter_status ?>" class="btn-ghost-custom">Clear</a><?php endif; ?>
     </form>
 </div>
@@ -97,44 +97,44 @@ foreach ($status_tabs as $s) {
     <div class="empty-state">
         <i class="bi bi-bag-x"></i>
         <h4>No Orders Found</h4>
-        <p><?= $search ? 'Try a different search term' : 'No ' . ($filter_status !== 'all' ? $filter_status . ' ' : '') . 'orders yet' ?></p>
+        <p><?= $search ? 'Try a different search term' : 'No ' . ($filter_status !== 'all' ? $filter_status . ' ' : '') . 'orders recorded yet.' ?></p>
     </div>
     <?php else: ?>
     <div style="overflow-x:auto;">
         <table class="table-glass">
             <thead>
                 <tr>
-                    <th style="padding-left:24px;">Order</th>
+                    <th style="padding-left:20px;">Order</th>
                     <th>Customer</th>
                     <th>Amount</th>
                     <th>Status</th>
-                    <th>Payment</th>
+                    <th>Payment Method</th>
                     <th>Date</th>
-                    <th style="text-align:right;padding-right:24px;">Actions</th>
+                    <th style="text-align:right;padding-right:20px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php while ($order = $orders->fetch_assoc()): ?>
                 <tr>
-                    <td style="padding-left:24px;">
-                        <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);">#<?= str_pad($order['shop_order_number'] ?? $order['id'], 4, '0', STR_PAD_LEFT) ?></div>
-                        <div style="font-size:11.5px;color:var(--muted);"><?= date('M j, Y', strtotime($order['created_at'])) ?></div>
+                    <td style="padding-left:20px;">
+                        <div style="font-weight:700;color:var(--primary);">#<?= str_pad($order['shop_order_number'] ?? $order['id'], 4, '0', STR_PAD_LEFT) ?></div>
+                        <div style="font-size:11.5px;color:var(--text-muted);"><?= date('M j, Y', strtotime($order['created_at'])) ?></div>
                     </td>
                     <td>
-                        <div style="font-weight:500;"><?= htmlspecialchars($order['customer_name']) ?></div>
-                        <div style="font-size:12px;color:var(--muted);"><?= htmlspecialchars($order['customer_phone'] ?? $order['customer_email'] ?? '') ?></div>
+                        <div style="font-weight:600;color:var(--text-primary);"><?= htmlspecialchars($order['customer_name']) ?></div>
+                        <div style="font-size:12px;color:var(--text-muted);"><?= htmlspecialchars($order['customer_phone'] ?? $order['customer_email'] ?? '') ?></div>
                     </td>
-                    <td style="font-family:'Syne',sans-serif;font-weight:700;">&#8377;<?= number_format($order['total_amount'], 2) ?></td>
+                    <td style="font-weight:700;">&#8377;<?= number_format($order['total_amount'], 2) ?></td>
                     <td><span class="status-pill pill-<?= $order['status'] ?>"><?= ucfirst(str_replace('_',' ',$order['status'])) ?></span></td>
-                    <td><span style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;"><?= strtoupper($order['payment_method']) ?></span></td>
-                    <td style="color:var(--muted);font-size:12.5px;"><?= date('g:i A', strtotime($order['created_at'])) ?></td>
-                    <td style="text-align:right;padding-right:24px;">
+                    <td><span style="font-size:11.5px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;"><?= strtoupper($order['payment_method']) ?></span></td>
+                    <td style="color:var(--text-muted);font-size:12px;"><?= date('g:i A', strtotime($order['created_at'])) ?></td>
+                    <td style="text-align:right;padding-right:20px;">
                         <div style="display:flex;justify-content:flex-end;gap:6px;">
-                            <button class="btn-ghost-custom" style="padding:6px 10px;font-size:12px;"
+                            <button class="btn-ghost-custom" style="padding:4px 10px;font-size:12px;"
                                 onclick="viewOrder(<?= $order['id'] ?>, <?= htmlspecialchars(json_encode($order)) ?>)">
-                                <i class="bi bi-eye"></i>
+                                <i class="bi bi-eye"></i> View
                             </button>
-                            <button class="btn-primary-custom" style="padding:6px 12px;font-size:12px;"
+                            <button class="btn-primary-custom" style="padding:4px 10px;font-size:12px;"
                                 onclick="openStatusModal(<?= $order['id'] ?>, '<?= $order['status'] ?>')">
                                 <i class="bi bi-pencil"></i> Update
                             </button>
@@ -148,13 +148,13 @@ foreach ($status_tabs as $s) {
 
     <!-- Pagination -->
     <?php if ($total_pages > 1): ?>
-    <div style="padding:16px 24px;border-top:1px solid var(--card-border);display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:13px;color:var(--muted);">Showing <?= $offset+1 ?>–<?= min($offset+$per_page, $total_rows) ?> of <?= $total_rows ?></span>
-        <div style="display:flex;gap:6px;">
+    <div style="padding:14px 20px;border-top:1px solid var(--card-border);background:#F8FAFC;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12.5px;color:var(--text-muted);">Showing <?= $offset+1 ?>–<?= min($offset+$per_page, $total_rows) ?> of <?= $total_rows ?> orders</span>
+        <div style="display:flex;gap:4px;">
             <?php for ($p = 1; $p <= $total_pages; $p++): ?>
             <a href="?status=<?= $filter_status ?>&q=<?= urlencode($search) ?>&page=<?= $p ?>"
-                style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;text-decoration:none;border:1px solid;transition:all 0.2s;
-                <?= $p == $page ? 'background:var(--accent-dim);border-color:rgba(200,169,126,0.3);color:var(--accent);font-weight:700;' : 'background:transparent;border-color:var(--card-border);color:var(--muted);' ?>">
+                style="width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12.5px;text-decoration:none;border:1px solid;transition:all 0.15s ease-in-out;
+                <?= $p == $page ? 'background:var(--primary);border-color:var(--primary);color:#FFFFFF;font-weight:700;' : 'background:#FFFFFF;border-color:#CBD5E1;color:var(--text-secondary);' ?>">
                 <?= $p ?>
             </a>
             <?php endfor; ?>
@@ -174,12 +174,12 @@ foreach ($status_tabs as $s) {
         <form method="POST" action="orders.php">
             <input type="hidden" name="action" value="update_status">
             <input type="hidden" name="order_id" id="modal_order_id">
-            <div style="margin-bottom:18px;">
-                <div class="form-label-custom">Order ID</div>
-                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:var(--accent);" id="modal_order_display"></div>
+            <div style="margin-bottom:16px;">
+                <div class="form-label-custom">Order Number</div>
+                <div style="font-weight:800;font-size:18px;color:var(--primary);" id="modal_order_display"></div>
             </div>
-            <div style="margin-bottom:24px;">
-                <div class="form-label-custom">New Status</div>
+            <div style="margin-bottom:20px;">
+                <div class="form-label-custom">Fulfillment Status</div>
                 <select name="status" id="modal_status" class="input-custom">
                     <option value="pending">Pending</option>
                     <option value="processing">Processing</option>
@@ -192,7 +192,7 @@ foreach ($status_tabs as $s) {
                 <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;">
                     <i class="bi bi-check-lg"></i> Save Status
                 </button>
-                <button type="button" class="btn-ghost-custom" onclick="closeModal('statusModal')" style="padding:10px 18px;">Cancel</button>
+                <button type="button" class="btn-ghost-custom" onclick="closeModal('statusModal')" style="padding:8px 16px;">Cancel</button>
             </div>
         </form>
     </div>
@@ -221,78 +221,83 @@ function openStatusModal(orderId, currentStatus) {
 
 function viewOrder(orderId, order) {
     const statusColors = {
-        pending:'#fbbf24',confirmed:'#34d399',processing:'#60a5fa',
-        out_for_delivery:'#a855f7',delivered:'#4ade80',cancelled:'#f87171'
+        pending:'#F59E0B',confirmed:'#10B981',processing:'#0EA5E9',
+        out_for_delivery:'#8B5CF6',delivered:'#059669',cancelled:'#EF4444'
+    };
+    const statusBg = {
+        pending:'#FFFBEB',confirmed:'#ECFDF5',processing:'#F0F9FF',
+        out_for_delivery:'#F5F3FF',delivered:'#ECFDF5',cancelled:'#FEF2F2'
     };
     const statusLabel = {
         pending:'Pending',confirmed:'Confirmed',processing:'Processing',
         out_for_delivery:'Out for Delivery',delivered:'Delivered',cancelled:'Cancelled'
     };
-    const color = statusColors[order.status] || '#888';
+    const color = statusColors[order.status] || '#64748B';
+    const bg    = statusBg[order.status] || '#F1F5F9';
     const label = statusLabel[order.status] || order.status;
     const orderNum = '#' + String(order.shop_order_number || orderId).padStart(4,'0');
 
     document.getElementById('orderDetailContent').innerHTML = `
         <div style="display:flex;flex-direction:column;gap:14px;padding-top:4px;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);">${orderNum}</div>
-                <span style="background:${color}22;color:${color};border:1px solid ${color}44;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;">${label}</span>
+                <div style="font-weight:800;font-size:20px;color:var(--primary);">${orderNum}</div>
+                <span style="background:${bg};color:${color};border:1px solid ${color}44;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700;">${label}</span>
             </div>
-            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <div>
-                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Customer</div>
-                    <div style="font-weight:600;font-size:13.5px;">${order.customer_name || '—'}</div>
-                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">${order.customer_phone || order.customer_email || ''}</div>
+                    <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Customer</div>
+                    <div style="font-weight:600;font-size:13.5px;color:var(--text-primary);">${order.customer_name || '—'}</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${order.customer_phone || order.customer_email || ''}</div>
                 </div>
                 <div>
-                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Date & Payment</div>
-                    <div style="font-weight:600;font-size:13px;">${new Date(order.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
-                    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-top:2px;">${order.payment_method || 'COD'}</div>
+                    <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Date & Payment</div>
+                    <div style="font-weight:600;font-size:13px;color:var(--text-primary);">${new Date(order.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+                    <div style="font-size:11.5px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;margin-top:2px;">${order.payment_method || 'COD'}</div>
                 </div>
             </div>
             ${order.address ? `
             <div>
-                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Delivery Address</div>
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;font-size:13.5px;line-height:1.6;">${order.address}</div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Delivery Address</div>
+                <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.5;color:var(--text-primary);">${order.address}</div>
             </div>` : ''}
             ${order.notes ? `
             <div>
-                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Order Notes</div>
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;font-size:13.5px;color:var(--muted);">${order.notes}</div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Order Notes</div>
+                <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text-secondary);">${order.notes}</div>
             </div>` : ''}
 
             <!-- Picklist -->
             <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">
-                        <i class="bi bi-boxes" style="margin-right:5px;color:var(--accent);"></i>Items to Pack
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">
+                        <i class="bi bi-boxes" style="margin-right:4px;color:var(--primary);"></i>Items to Pack
                     </div>
-                    <div id="pickProgress" style="font-size:12px;color:var(--muted);font-weight:600;"></div>
+                    <div id="pickProgress" style="font-size:12px;color:var(--text-muted);font-weight:600;"></div>
                 </div>
                 <div id="picklistItems" style="display:flex;flex-direction:column;gap:8px;">
-                    <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">
-                        <i class="bi bi-hourglass-split" style="font-size:20px;display:block;margin-bottom:8px;"></i>Loading items...
+                    <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">
+                        <i class="bi bi-hourglass-split" style="font-size:18px;display:block;margin-bottom:4px;"></i>Loading items...
                     </div>
                 </div>
             </div>
 
             <!-- Total -->
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--accent-dim);border:1px solid rgba(200,169,126,0.2);border-radius:10px;">
-                <div style="font-size:13.5px;font-weight:600;">Order Total</div>
-                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);">₹${parseFloat(order.total_amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;">
+                <div style="font-size:13.5px;font-weight:600;color:#1E3A8A;">Order Grand Total</div>
+                <div style="font-weight:800;font-size:19px;color:var(--primary);">₹${parseFloat(order.total_amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
             </div>
 
             <!-- Actions -->
-            <div style="display:flex;gap:10px;">
+            <div style="display:flex;gap:10px;margin-top:4px;">
                 <button onclick="openStatusModal(${orderId},'${order.status}');closeModal('viewModal');"
                     class="btn-primary-custom" style="flex:1;justify-content:center;">
                     <i class="bi bi-pencil"></i> Update Status
                 </button>
                 <button onclick="window.open('invoice_pdf.php?order_id=${orderId}','_blank')"
-                    class="btn-ghost-custom" style="padding:10px 18px;color:var(--accent);border-color:var(--accent);" title="Print Invoice">
+                    class="btn-ghost-custom" style="padding:8px 16px;color:var(--primary);border-color:#BFDBFE;background:#EFF6FF;" title="Print Invoice">
                     <i class="bi bi-printer"></i> Invoice
                 </button>
-                <button onclick="closeModal('viewModal')" class="btn-ghost-custom" style="padding:10px 18px;">Close</button>
+                <button onclick="closeModal('viewModal')" class="btn-ghost-custom" style="padding:8px 16px;">Close</button>
             </div>
         </div>
     `;
@@ -307,14 +312,14 @@ function viewOrder(orderId, order) {
             const progress  = document.getElementById('pickProgress');
 
             if (!items.length) {
-                container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">No items found.</div>';
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">No items found.</div>';
                 return;
             }
 
             const updateProgress = () => {
                 const checked = container.querySelectorAll('input[type=checkbox]:checked').length;
                 progress.textContent = checked + ' / ' + items.length + ' picked';
-                progress.style.color = checked === items.length ? 'var(--success)' : 'var(--muted)';
+                progress.style.color = checked === items.length ? 'var(--success-text)' : 'var(--text-muted)';
             };
 
             container.innerHTML = items.map((item, idx) => {
@@ -324,21 +329,21 @@ function viewOrder(orderId, order) {
                         ? (item.image.startsWith('http') ? item.image : `../assets/uploads/products/${item.image}`)
                         : null);
                 return `
-                <label id="pickrow_${idx}" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.02);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;cursor:pointer;transition:all 0.2s;">
+                <label id="pickrow_${idx}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;cursor:pointer;transition:all 0.15s ease-in-out;">
                     <input type="checkbox" id="pick_${idx}" onchange="handlePick(this,${idx})"
-                        style="width:20px;height:20px;accent-color:var(--success);flex-shrink:0;cursor:pointer;">
-                    <div style="width:48px;height:48px;border-radius:10px;overflow:hidden;background:var(--card-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        ${imgSrc ? `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="bi bi-image" style="color:var(--muted);font-size:18px;"></i>`}
+                        style="width:18px;height:18px;accent-color:var(--success);flex-shrink:0;cursor:pointer;">
+                    <div style="width:40px;height:40px;border-radius:6px;overflow:hidden;background:#FFFFFF;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid #CBD5E1;">
+                        ${imgSrc ? `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="bi bi-image" style="color:var(--text-muted);font-size:16px;"></i>`}
                     </div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
-                        ${item.cat_name ? `<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${item.cat_name}</div>` : ''}
+                        <div style="font-weight:600;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+                        ${item.cat_name ? `<div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">${item.cat_name}</div>` : ''}
                     </div>
                     <div style="text-align:right;flex-shrink:0;">
-                        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--accent);">₹${parseFloat(item.price).toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
-                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Qty: <strong style="color:var(--text);">${item.quantity}</strong></div>
+                        <div style="font-weight:700;font-size:13.5px;color:var(--text-primary);">₹${parseFloat(item.price).toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
+                        <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">Qty: <strong style="color:var(--text-primary);">${item.quantity}</strong></div>
                     </div>
-                    <div id="pickbadge_${idx}" style="display:none;font-size:11px;font-weight:700;color:var(--success);background:var(--success-dim);padding:3px 9px;border-radius:99px;flex-shrink:0;align-items:center;gap:4px;">
+                    <div id="pickbadge_${idx}" style="display:none;font-size:11px;font-weight:700;color:var(--success-text);background:var(--success-bg);border:1px solid var(--success-border);padding:2px 8px;border-radius:4px;flex-shrink:0;align-items:center;gap:4px;">
                         <i class="bi bi-check2"></i> Picked
                     </div>
                 </label>`;
@@ -351,7 +356,7 @@ function viewOrder(orderId, order) {
         })
         .catch(() => {
             document.getElementById('picklistItems').innerHTML =
-                '<div style="text-align:center;padding:16px;color:var(--danger);font-size:13px;"><i class="bi bi-exclamation-circle"></i> Failed to load items.</div>';
+                '<div style="text-align:center;padding:16px;color:var(--danger-text);font-size:13px;"><i class="bi bi-exclamation-circle"></i> Failed to load order items.</div>';
         });
 }
 
@@ -359,12 +364,12 @@ function handlePick(checkbox, idx) {
     const row   = document.getElementById('pickrow_' + idx);
     const badge = document.getElementById('pickbadge_' + idx);
     if (checkbox.checked) {
-        row.style.borderColor = 'rgba(74,222,128,0.35)';
-        row.style.background  = 'rgba(74,222,128,0.05)';
+        row.style.borderColor = 'var(--success-border)';
+        row.style.background  = 'var(--success-bg)';
         badge.style.display   = 'inline-flex';
     } else {
-        row.style.borderColor = 'rgba(255,255,255,0.06)';
-        row.style.background  = 'rgba(255,255,255,0.02)';
+        row.style.borderColor = '#E2E8F0';
+        row.style.background  = '#F8FAFC';
         badge.style.display   = 'none';
     }
 }
