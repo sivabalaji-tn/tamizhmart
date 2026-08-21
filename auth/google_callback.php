@@ -3,7 +3,7 @@ session_start();
 require '../config/db.php';
 require '../config/google_oauth_config.php';
 
-function oauth_error(string $msg, int $code = 400): never {
+function oauth_error(string $msg, int $code = 400) {
     http_response_code($code);
     $safe = htmlspecialchars($msg, ENT_QUOTES, 'UTF-8');
     echo "<!DOCTYPE html><html><head><title>Auth Error</title>

@@ -4,7 +4,8 @@ require '../config/db.php';
 require_once 'google_oauth_init.php';
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../shop/index.php");
+    $redir_slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? '';
+    header("Location: ../shop/index.php" . ($redir_slug ? '?shop=' . urlencode($redir_slug) : ''));
     exit;
 }
 
