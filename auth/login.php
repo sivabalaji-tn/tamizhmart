@@ -488,6 +488,14 @@ $google_url = $shop ? google_oauth_url($shop['slug'], 'login') : null;
                 </button>
             </div>
 
+            <div style="text-align:right;margin:-6px 0 14px;">
+                <a href="forgot_password.php?shop=<?= htmlspecialchars($shop_slug ?? '') ?>"
+                   style="font-size:13px;color:var(--primary);text-decoration:none;font-weight:600;opacity:.85;transition:opacity .15s;"
+                   onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85">
+                    Forgot password?
+                </a>
+            </div>
+
             <button type="submit" class="btn-submit animate-in d3" id="submitBtn">
                 <span class="btn-text"><i class="bi bi-bag-check me-2"></i>Sign In &amp; Shop</span>
                 <div class="btn-spinner"></div>
