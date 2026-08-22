@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $old_img   = $_POST['old_image'];
         $image     = uploadPopupImg('image') ?? $old_img;
         $stmt = $conn->prepare("UPDATE popups SET title=?,message=?,image=?,button_text=?,button_link=?,is_active=?,start_date=?,end_date=? WHERE id=? AND shop_id=?");
-        $stmt->bind_param("sssssssiii", $title,$message,$image,$btn_text,$btn_link,$is_active,$start,$end,$pid,$shop_id);
+        $stmt->bind_param("sssssissii", $title,$message,$image,$btn_text,$btn_link,$is_active,$start,$end,$pid,$shop_id);
         if ($stmt->execute()) $success = "Popup updated.";
         else $error = "Failed to update.";
 
