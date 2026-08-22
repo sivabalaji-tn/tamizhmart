@@ -1,13 +1,44 @@
-# Tamizhmart 🛍️
-### White-Label E-Commerce Platform
+<div align="center">
 
-> End of the Update on this project on 18-07-2026/ Saturdat 10:00 pm.
-> Built by **[@sivabalaji-tn](https://github.com/sivabalaji-tn)** -😄
-> Readme Content by AI
+<img src="assets/icons/icon-192.png" alt="TamizhMart Logo" width="96" height="96" style="border-radius:20px"/>
 
-A complete, multi-tenant e-commerce platform where each shop owner gets their own fully branded storefront — customizable colors, fonts, logo, products, and orders — all from a single codebase.
+# TamizhMart 🛍️
 
-No frameworks. No npm install taking 4 hours. Just PHP, MySQL, and vibes. ✨
+**White-Label Multi-Tenant E-Commerce Platform**
+
+[![PHP](https://img.shields.io/badge/PHP-8.x-777BB4?style=flat-square&logo=php&logoColor=white)](https://php.net)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://mysql.com)
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=flat-square&logo=bootstrap&logoColor=white)](https://getbootstrap.com)
+[![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=flat-square&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
+[![Razorpay](https://img.shields.io/badge/Razorpay-Integrated-02042B?style=flat-square&logo=razorpay&logoColor=white)](https://razorpay.com)
+[![Google OAuth](https://img.shields.io/badge/Google-OAuth-4285F4?style=flat-square&logo=google&logoColor=white)](https://developers.google.com/identity)
+[![License](https://img.shields.io/badge/License-Source_Available-red?style=flat-square)](#-license--usage)
+[![Made in](https://img.shields.io/badge/Made_in-Tamil_Nadu_🇮🇳-orange?style=flat-square)](https://github.com/sivabalaji-tn)
+
+<br/>
+
+> *One codebase. Infinite shops. Zero frameworks. Pure PHP.*
+
+**Built by [@sivabalaji-tn](https://github.com/sivabalaji-tn) — Tamil Nadu, India 🇮🇳**
+*Powered by coffee, curiosity, and very late nights ☕🌙*
+
+---
+
+[Features](#-features) · [Tech Stack](#-tech-stack) · [Installation](#-installation) · [Project Structure](#-project-structure) · [License](#-license--usage)
+
+</div>
+
+---
+
+## 📖 What is TamizhMart?
+
+TamizhMart is a **complete, production-ready, white-label e-commerce platform** where each shop owner gets their own fully branded storefront — custom colors, fonts, logo, products, orders — all powered by a single codebase.
+
+Think of it as *Shopify built from scratch*, but with zero monthly fees, zero npm installs, and all the code is yours.
+
+```
+One platform → Multiple shops → Each shop: fully custom branded
+```
 
 ---
 
@@ -15,280 +46,361 @@ No frameworks. No npm install taking 4 hours. Just PHP, MySQL, and vibes. ✨
 
 This project is **source-available** — you can read it, learn from it, run it locally, and build on top of it.
 
-**However:**
-- ❌ Do NOT redistribute, resell, or publish this as your own work
-- ❌ Do NOT use this in a commercial product without permission
-- ❌ Do NOT remove this README or the author credit
-- ✅ You CAN fork it for personal use
-- ✅ You CAN learn from the code
-- ✅ You CAN contribute improvements
+| | Action |
+|---|---|
+| ✅ | Fork for personal/learning use |
+| ✅ | Study and learn from the code |
+| ✅ | Contribute improvements via PR |
+| ❌ | Redistribute or resell as your own |
+| ❌ | Use commercially without permission |
+| ❌ | Remove README or author credits |
 
-**For permissions, collaborations, or licensing — contact the author first.**
+> 📩 For licensing, permissions, or collaborations — contact **Sivabalaji** first. He will know. 👀
 
-> 📩 Reach out to **Sivabalaji** before you do anything funny with this code. He will know. 👀
-
----
-
-## 👨‍💻 Author
-
-**Sivabalaji**
-- GitHub: [@sivabalaji-tn](https://github.com/sivabalaji-tn)
-- Built in: Tamil Nadu, India 🇮🇳
-- Powered by: Coffee, curiosity, and late nights ☕🌙
-
+*© 2025–2026 Sivabalaji. All rights reserved.*
 
 ---
 
 ## ✨ Features
 
-### 🧑‍💼 Shop Owner Dashboard
-| Feature | Description |
-|---|---|
-| **Analytics** | Revenue charts, order trends, top products, customer stats |
-| **Orders** | View, filter, and update order statuses with one click |
-| **Products** | Add/edit/delete with images or URL, pricing, stock, discounts |
-| **Categories** | Organize products into banner-supported categories |
-| **Popups & Offers** | Schedule promotional popups with images and CTAs |
-| **Store Settings** | Name, logo, banner, announcement bar, phone, address |
-| **Theme Customizer** | Live-preview color picker + 8 font choices + 8 quick presets |
-| **Social Links** | WhatsApp, Instagram, Facebook, X, YouTube, Website |
-| **Setup Wizard** | Guided 5-step onboarding for new shop owners |
-
 ### 🛒 Customer Storefront
-| Feature | Description |
+
+Everything a customer needs for a great shopping experience — per shop, fully themed.
+
+| Feature | Details |
 |---|---|
-| **Home Page** | Hero banner, categories grid, featured products, promo strip |
-| **Product Listing** | Filters, price range slider, sort, pagination |
-| **Product Detail** | Full image, quantity selector, related products |
-| **Cart** | AJAX live updates, quantity changes, line totals |
-| **Checkout** | Address form, order notes, COD, animated success screen |
-| **Order History** | Accordion cards with animated status timeline |
-| **Profile** | Edit name/phone/address, change password, order stats |
-| **Search** | Real-time product search across the shop |
+| **Dynamic Home Page** | Hero banner, promo strip, category grid, featured products, sale highlights |
+| **Product Listing** | Multi-filter by category, price range slider, sort by price/newest/popular, pagination |
+| **Product Detail** | Full image gallery, quantity selector, stock status, related products |
+| **Real-time Cart** | AJAX-powered live cart updates, quantity changes, line totals, persistent sessions |
+| **Checkout** | Delivery address form, order notes, COD + **Razorpay online payment**, animated success screen |
+| **Order Receipt** | Downloadable order receipt page per order |
+| **Order History** | Accordion-style order cards with live animated status timeline |
+| **Customer Profile** | Edit name, phone, address, change password, order stats |
+| **Product Search** | Real-time search across products within a shop |
+| **Promo Popups** | Timed promotional popups with image, CTA button, and scheduling |
 
-### 📱 PWA (Progressive Web App)
-- Installable on Android & iOS home screen
-- Service worker with offline support
-- "Install App" smart banner
-- Offline fallback page
-- Background sync ready
-- Push notifications scaffold
+### 🔐 Authentication
 
-> Yes, it works offline. Your users can browse products even when their internet is as reliable as a government website. 🙃
+| Feature | Details |
+|---|---|
+| **Customer Login** | Per-shop branded login with custom colors and logo |
+| **Customer Register** | Per-shop registration with validation |
+| **Google OAuth** | One-click Sign In / Register via Google Account |
+| **Forgot Password** | 6-digit OTP sent via email → OTP verification page → New password form |
+| **OTP Email** | Branded HTML email with shop name, 6-digit code (10-min expiry, single-use) |
+| **Password Reset** | Live strength indicator, show/hide toggle, confirm match validation |
+| **Shop Owner Login** | Separate owner authentication portal |
+| **Session Security** | `SameSite=Lax` cookies, session binding per shop, secure redirects |
+
+### 🧑‍💼 Shop Owner Dashboard
+
+A full-featured business management dashboard for each shop owner.
+
+| Feature | Details |
+|---|---|
+| **Analytics** | Revenue charts (daily/weekly/monthly), order trends, top products, customer growth stats (Chart.js) |
+| **Orders** | View, filter by status/date, update order status with one click, print orders |
+| **Order Export** | Export orders to CSV with filters |
+| **Invoice PDF** | Generate and download printable PDF invoice per order |
+| **Products** | Add/edit/delete products with images or URL, pricing, stock, discounts |
+| **Bulk Upload** | Upload multiple products at once via CSV |
+| **Product Sorting** | Drag-and-drop product sort order |
+| **Categories** | Create/edit categories with optional banner images |
+| **Popups & Offers** | Schedule promotional popups with image, CTA, start/end dates, active toggle |
+| **Store Settings** | Shop name, slug, description, logo, banner, city, announcement bar, phone, address |
+| **Theme Customizer** | Live-preview color picker + 8 Google Fonts + 8 quick theme presets |
+| **Social Links** | WhatsApp, Instagram, Facebook, X (Twitter), YouTube, Website |
+| **Customer List** | View all registered customers for the shop |
+| **5-Step Setup Wizard** | Guided onboarding — name → logo → theme → first product → launch |
+| **Transactional Emails** | Order confirmation emails with branded HTML template via PHPMailer + Gmail SMTP |
+
+### 👑 Super Admin Command Center
+
+A dedicated super-admin panel to manage the entire platform.
+
+| Feature | Details |
+|---|---|
+| **Command Console** | Platform-wide live stats — total shops, orders, revenue, active users |
+| **All Merchant Shops** | View, search, suspend, activate, and manage every shop |
+| **Shop Owners** | Full owner account management |
+| **Customer Base** | Platform-wide customer overview |
+| **Global Transactions** | View all orders across all shops with filters |
+| **Tier Plans** | Create and manage subscription plans with price, duration, limits, commission % |
+| **Subscriptions & Billing** | Assign plans to shops, track trial/active/grace/suspended status, renew, extend, suspend/restore |
+| **Commission Tracking** | Per-subscription-period commission — resets correctly on renewal |
+| **Collect Commission** | One-click settlement with note, logged to permanent audit trail |
+| **Audit & Commission Logs** | 3-tab audit trail — Subscription History · Commission Collections · Per-Order Log |
+| **Global Settings** | Platform name, city, tagline, maintenance mode toggle |
+| **Maintenance Mode** | One-click platform lockdown banner across all storefronts |
+
+### 📱 Progressive Web App (PWA)
+
+| Feature | Status |
+|---|---|
+| Dynamic Web App Manifest (per shop, themed) | ✅ |
+| Service Worker offline caching | ✅ |
+| Offline fallback page | ✅ |
+| Smart install banner (auto-shown after 4s) | ✅ |
+| iOS Apple Web App meta tags | ✅ |
+| Background Sync scaffold | 🔧 Ready |
+| Push Notifications scaffold | 🔧 Ready |
+
+### 💳 Payments
+
+| Gateway | Status |
+|---|---|
+| **Cash on Delivery (COD)** | ✅ Built-in |
+| **Razorpay Online Payment** | ✅ Integrated |
+
+> ⚠️ Razorpay requires HTTPS in production. Use COD on localhost for testing.
 
 ---
 
 ## 🏗️ Tech Stack
 
-- **Backend:** PHP 8.x (procedural — no Laravel, no Symfony, no drama)
-- **Database:** MySQL via phpMyAdmin / XAMPP
-- **Frontend:** Bootstrap 5.3 + Bootstrap Icons + custom CSS variables
-- **Charts:** Chart.js (owner analytics)
-- **Fonts:** Google Fonts (dynamic per shop theme)
-- **PWA:** Service Worker + Web App Manifest
+| Layer | Technology |
+|---|---|
+| **Backend** | PHP 8.x — procedural, no frameworks, no drama |
+| **Database** | MySQL 8.0 with prepared statements throughout |
+| **Frontend** | Bootstrap 5.3 + Bootstrap Icons + Vanilla CSS variables |
+| **Charts** | Chart.js 4.x (owner analytics) |
+| **Fonts** | Google Fonts — dynamic per shop theme |
+| **Email** | PHPMailer 6.x + Gmail SMTP |
+| **OAuth** | Google Identity OAuth 2.0 |
+| **Payments** | Razorpay PHP SDK |
+| **PWA** | Service Worker + Web App Manifest |
+| **Dev Environment** | Docker (PHP 8.x + MySQL 8 + phpMyAdmin) |
 
-> No Node.js. No `node_modules` folder that weighs more than your laptop. 🙏
+> No Node.js. No `node_modules` folder heavier than your soul. 🙏
 
 ---
 
 ## 📁 Project Structure
 
 ```
-Tamizhmart/
-├── index.php                  # Root entry — routes customer straight to their shop
-├── manifest.php               # Dynamic PWA manifest (per-shop themed)
-├── sw.js                      # Service Worker (offline caching)
-├── offline.php                # Offline fallback page
-├── 404.php                    # Custom 404 (prettier than your ex's apology)
-├── .htaccess                  # Apache config (security, caching, compression)
-├── Tamizhmart_schema.sql        # ← Run this first. Seriously. First.
+tamizhmart/
+│
+├── index.php                    # Platform landing — shop directory + slug routing
+├── .htaccess                    # Apache security, caching, HTTPS redirect, URL rewriting
+├── mainfest.php                 # Dynamic PWA manifest (per-shop branded)
+├── sw.js                        # Service Worker (offline cache)
+├── offline.php                  # Offline fallback page
+├── 404.php                      # Custom 404 error page
+├── tamizhmart_db.sql            # ← Run this first. Always first.
 │
 ├── config/
-│   └── db.php                 # Database connection (put your credentials here)
+│   └── db.php                   # DB connection + session config (auto-detects local vs prod)
 │
-├── auth/                      # Customer authentication
-│   ├── login.php              # Customer login (per-shop themed)
-│   ├── register.php           # Customer registration
-│   └── logout.php             # Bye bye session 👋
-│
-├── owner/                     # Shop owner dashboard
-│   ├── login.php
-│   ├── register.php
+├── auth/                        # Customer authentication
+│   ├── login.php                # Per-shop themed login + Google OAuth
+│   ├── register.php             # Customer sign up (per shop)
 │   ├── logout.php
-│   ├── setup.php              # 5-step onboarding wizard (runs on first login)
-│   ├── dashboard.php
-│   ├── orders.php
-│   ├── products.php
-│   ├── categories.php
-│   ├── popups.php
-│   ├── settings.php
-│   ├── theme.php
-│   ├── analytics.php
-│   ├── social.php
-│   └── includes/
-│       ├── sidebar.php        # Shared dashboard layout
-│       └── footer.php         # Closing tags + flash alerts
+│   ├── forgot_password.php      # Email entry → OTP via PHPMailer
+│   ├── verify_otp.php           # 6-box OTP entry, auto-advance, countdown
+│   ├── reset_password.php       # New password + strength bar
+│   ├── google_oauth_init.php    # OAuth URL generator
+│   └── google_callback.php      # OAuth callback handler
 │
-├── shop/                      # Customer-facing storefront
-│   ├── index.php              # Home page
-│   ├── products.php           # Product listing with filters
-│   ├── product.php            # Product detail page
-│   ├── cart.php               # Shopping cart
-│   ├── cart_action.php        # AJAX cart handler
-│   ├── checkout.php           # Checkout + order placement
-│   ├── orders.php             # Customer order history
-│   ├── profile.php            # Customer profile
-│   └── includes/
-│       ├── shop_head.php      # Navbar, PWA meta, global CSS
-│       ├── shop_foot.php      # Footer, social links, PWA JS
-│       └── product_card.php   # Reusable product card component
+├── owner/                       # Shop owner dashboard
+│   ├── login.php / register.php / logout.php
+│   ├── setup.php                # 5-step onboarding wizard
+│   ├── dashboard.php            # Analytics + revenue charts
+│   ├── orders.php               # Order management
+│   ├── export_orders.php        # CSV export
+│   ├── invoice_pdf.php          # PDF invoice generator
+│   ├── products.php             # Product CRUD
+│   ├── bulk_upload.php          # CSV bulk product import
+│   ├── sort_products.php        # Drag-and-drop sort
+│   ├── categories.php           # Category management
+│   ├── popups.php               # Promo popup scheduler
+│   ├── settings.php             # Shop settings
+│   ├── theme.php                # Live theme customizer
+│   ├── social.php               # Social links
+│   ├── analytics.php            # Detailed analytics
+│   └── customers.php            # Customer list
 │
-├── email/
-│   └── order_email.php        # HTML email template builder
+├── shop/                        # Customer-facing storefront
+│   ├── index.php                # Home — hero, categories, products
+│   ├── products.php             # Product listing + filters
+│   ├── product.php              # Product detail
+│   ├── cart.php                 # Cart page
+│   ├── cart_action.php          # AJAX cart handler
+│   ├── checkout.php             # Checkout + payment
+│   ├── razorpay_create_order.php / razorpay_verify.php
+│   ├── reciept.php              # Order receipt
+│   ├── orders.php               # Order history
+│   └── profile.php              # Customer profile
+│
+├── superadmin/                  # Platform super admin
+│   ├── dashboard.php            # Command console
+│   ├── shops.php                # All shops
+│   ├── owners.php / customers.php / orders.php
+│   ├── plans.php                # Subscription tiers
+│   ├── subscriptions.php        # Billing + commission collect
+│   ├── commission_logs.php      # Full audit trail
+│   └── settings.php             # Platform settings
 │
 └── assets/
-    ├── js/
-    │   └── pwa.js             # Service worker registration + install prompt
-    ├── icons/                 # PWA icons (generate with realfavicongenerator.net)
-    │   ├── icon-72.png
-    │   ├── icon-96.png
-    │   ├── icon-128.png
-    │   ├── icon-192.png
-    │   └── icon-512.png
+    ├── js/pwa.js                # SW registration + install prompt
+    ├── icons/                   # PWA icons (72–512px)
     └── uploads/
-        ├── logos/             # Shop logos
-        ├── banners/           # Shop banners
-        ├── products/          # Product images
-        └── popups/            # Popup offer images
+        ├── logos/
+        ├── banners/
+        ├── products/
+        └── popups/
 ```
 
 ---
 
-## 🚀 Installation (XAMPP / Local)
+## 🗄️ Database Tables
 
-### Step 1 — Place files
+| Table | Purpose |
+|---|---|
+| `owners` | Shop owner accounts |
+| `shops` | Shop config — slug, theme, logo, banner, city |
+| `shop_settings` | Key-value — phone, social links, setup status |
+| `users` | Customer accounts (per `shop_id`) |
+| `categories` | Product categories |
+| `products` | Products with pricing, stock, discount |
+| `cart` | Active cart (session + user bound) |
+| `orders` | Placed orders with status, total |
+| `order_items` | Line items per order |
+| `popups` | Promotional popup scheduler |
+| `plans` | Subscription tier definitions |
+| `shop_subscriptions` | Per-shop billing history (trial/active/grace/suspended/completed) |
+| `commission_log` | Per-order platform commission (collected/pending) |
+| `commission_collections` | Commission settlement audit log |
+| `password_resets` | OTP codes for password reset (10-min expiry) |
+| `platform_settings` | Global config (name, city, maintenance mode) |
+| `super_admins` | Super admin accounts |
+
+---
+
+## 🚀 Installation
+
+### Option A — Docker (Recommended)
+
 ```bash
-C:/xampp/htdocs/Tamizhmart/
-# Mac/Linux:
-/Applications/XAMPP/htdocs/Tamizhmart/
+git clone https://github.com/sivabalaji-tn/tamizhmart.git
+cd tamizhmart
+docker-compose up -d
 ```
 
-### Step 2 — Create the database
-1. Open **phpMyAdmin** → `http://localhost/phpmyadmin`
-2. Create a new database named `Tamizhmart_db`
-3. Select it → **Import** → upload `Tamizhmart_schema.sql` → **Go**
+- App: `http://localhost:8080`
+- phpMyAdmin: `http://localhost:8081` (root / root)
 
-### Step 3 — Configure database connection
-Edit `config/db.php`:
+Import `tamizhmart_db.sql` via phpMyAdmin → Done. 🎉
+
+---
+
+### Option B — XAMPP / Local PHP
+
+**Step 1** — Place files in `C:/xampp/htdocs/tamizhmart/`
+
+**Step 2** — Create database `tamizhmart_db` → import `tamizhmart_db.sql`
+
+**Step 3** — Edit `config/db.php`:
 ```php
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');      // your MySQL username
-define('DB_PASS', '');          // blank for XAMPP default
-define('DB_NAME', 'Tamizhmart_db');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'tamizhmart_db');
 ```
 
-### Step 4 — Create upload folders
+**Step 4** — Create upload folders:
 ```bash
-mkdir -p assets/uploads/logos
-mkdir -p assets/uploads/banners
-mkdir -p assets/uploads/products
-mkdir -p assets/uploads/popups
+mkdir -p assets/uploads/{logos,banners,products,popups}
 mkdir -p assets/icons
 ```
-Or on Windows, right-click → New Folder. You know how it works. 😄
 
-### Step 5 — PWA Icons (optional but recommended)
-1. Go to https://realfavicongenerator.net
-2. Upload a 512×512 PNG logo
-3. Copy icons to `assets/icons/` named: `icon-72.png`, `icon-96.png`, `icon-128.png`, `icon-192.png`, `icon-512.png`
-
-### Step 6 — Launch!
-```
-http://localhost/Tamizhmart/
-```
-🎉 If it works on the first try, you're either very lucky or a genius.
+**Step 5** — Open `http://localhost/tamizhmart/` 🚀
 
 ---
 
-## 🔑 First Time Setup
+## 🔑 First-Time Setup
 
-1. Visit `http://localhost/Tamizhmart/` and register as a shop owner
-2. Login → auto-redirected to the **5-step Setup Wizard**:
-   - Step 1: Shop name & description
-   - Step 2: Upload logo
-   - Step 3: Pick theme colors & font
-   - Step 4: Add first category & product
-   - Step 5: Announcement bar + phone → **Launch!**
-3. Your shop is live at: `http://localhost/Tamizhmart/?shop=YOUR_SLUG`
+1. Visit the landing page → **Register Your Shop**
+2. Login → Auto-redirected to the **5-Step Setup Wizard**
 
----
+| Step | Action |
+|---|---|
+| 1 | Shop name, slug, description |
+| 2 | Upload logo |
+| 3 | Pick theme colors + font |
+| 4 | Add first category + product |
+| 5 | Announcement bar + phone → Launch! |
 
-## 🌐 Customer Flow
+Shop goes live at: `http://localhost:8080/?shop=YOUR_SLUG`
 
-```
-Visit shop URL
-    ↓
-Browse products / search / filter by category
-    ↓
-View product detail → Add to cart
-    ↓
-[Not logged in?] → Register / Login
-    ↓
-Cart → Checkout → Enter address → Place Order (COD)
-    ↓
-Order confirmed → Track in "My Orders"
-    ↓
-Owner updates status → Customer sees live timeline
-    ↓
-Customer gets their cake. Everyone is happy. 🎂
-```
+**Super Admin:** `http://localhost:8080/superadmin/login.php`
 
 ---
 
 ## 🎨 Dynamic Theme System
 
-Each shop has its own theme stored in the database. The owner picks colors in the dashboard and the entire storefront updates instantly — no redeploy, no cache clear, no crying.
+Every shop has its own theme in the database. The owner picks colors from a live preview picker — the entire storefront updates instantly. No redeploy. No cache clear.
 
 ```css
 :root {
-  --primary:   [owner picked this];
-  --secondary: [and this];
-  --bg:        [and this];
-  --text:      [even this];
+  --primary:   /* owner's brand color */;
+  --secondary: /* accent */;
+  --bg:        /* background */;
+  --font:      /* Google Font */;
 }
 ```
 
----
-
-## 📱 PWA Setup
-
-| Feature | Status |
-|---|---|
-| Web App Manifest | ✅ Dynamic per shop |
-| Service Worker | ✅ `sw.js` at root |
-| Offline Page | ✅ `offline.php` |
-| Install Banner | ✅ Auto-shown after 4s |
-| iOS Meta Tags | ✅ apple-mobile-web-app |
-| Push Notifications | 🔧 Scaffold ready |
-| Background Sync | 🔧 Scaffold ready |
-
-> ⚠️ Service workers need HTTPS in production. On localhost they work fine. Don't blame the code if your hosting has no SSL — just get a free Let's Encrypt cert.
+**8 Quick Presets:** `Gold & Dark` · `Ocean Blue` · `Forest Green` · `Sunset` · `Rose Gold` · `Purple Night` · `Charcoal` · `Classic Red`
 
 ---
 
 ## 🔒 Security
 
-- Prepared statements everywhere — SQL injection is not welcome here
-- Passwords hashed with bcrypt — not MD5, we're not living in 2008
-- Session-based auth with `shop_id` binding — one shop can't peek at another
-- File uploads validated by type + size — you can't upload a `.php` disguised as a `.jpg`
-- `.htaccess` blocks direct access to config, SQL dumps, and `.env`
+| Layer | Implementation |
+|---|---|
+| SQL Injection | Prepared statements everywhere |
+| Passwords | bcrypt via `password_hash()` |
+| Sessions | `SameSite=Lax`, shop-scoped binding |
+| File Uploads | Extension whitelist + MIME check + size limit |
+| OTP | `hash_equals()` timing-safe, 10-min expiry, single-use |
+| .htaccess | Blocks config/sql/env direct access |
+| Google OAuth | State parameter validation, server-side token exchange |
 
 ---
 
-## 🛠️ Rename the Root Folder
+## 💰 Subscription & Commission System
 
-Want to rename `Tamizhmart` to something else? Only 3 files need updating — `sw.js`, `pwa.js`, and `.htaccess`. Everything else uses relative paths and is completely safe.
+```
+Shop Owner → pays platform subscription → gets plan with commission %
+Every completed order → logs commission_amount to commission_log
+Per subscription period → commission tracked in isolation
+Admin collects → settlement logged in commission_collections
+```
+
+**3-tab Audit Log:**
+- 📋 **Subscription History** — all activations, renewals, completed periods
+- 💵 **Commission Collections** — every settlement with amount, note, who collected
+- 🧾 **Per-Order Commission** — full breakdown per order (pending vs collected)
+
+---
+
+## 📧 Email System
+
+Powered by **PHPMailer + Gmail SMTP**:
+
+| Email | Trigger |
+|---|---|
+| Order Confirmation | Customer places order |
+| Welcome Email | New shop owner registers |
+| OTP Password Reset | Customer requests forgot password |
+
+```php
+// In shop/includes/notifications.php
+$mail->Username = 'your@gmail.com';
+$mail->Password = 'xxxx xxxx xxxx xxxx'; // Gmail App Password
+```
+
+> Generate App Password: Google Account → Security → 2FA → App Passwords
 
 ---
 
@@ -296,56 +408,49 @@ Want to rename `Tamizhmart` to something else? Only 3 files need updating — `s
 
 | Problem | Fix |
 |---|---|
-| Blank page | Add `ini_set('display_errors',1);` to `config/db.php` |
+| Blank page | Check PHP error log. Enable `display_errors` temporarily |
+| "Headers already sent" | BOM in PHP file — open in hex editor, first 3 bytes must be `3C 3F 70` |
 | Images not uploading | `chmod 755 assets/uploads/*` |
-| Can't login | Clear browser cookies/session. Classic. |
-| DB error | Check credentials in `config/db.php` |
-| Service worker broken | Needs HTTPS in production |
-| Fonts not loading | You're offline or Google is having a bad day |
-| Everything is broken | Deep breath. Check error log. You got this. 💪 |
+| Can't login | Clear browser cookies. Session mismatch. |
+| DB connection failed | Use `localhost` not `localhost:3306` in DB_HOST |
+| Google OAuth broken | Verify redirect URI in Google Console matches domain exactly |
+| OTP email not sending | Regenerate Gmail App Password |
+| Razorpay not working | Needs HTTPS — use COD on localhost |
 
 ---
 
-## 📦 Database Tables
+## 🚢 Production Deployment
 
-| Table | Purpose |
-|---|---|
-| `owners` | Shop administrator accounts |
-| `shops` | One shop per owner — name, slug, theme, logo, banner |
-| `shop_settings` | Key-value store for social links, phone, setup status |
-| `users` | Customer accounts (scoped per shop) |
-| `categories` | Product categories |
-| `products` | Products with pricing, stock, images |
-| `cart` | Active shopping cart |
-| `orders` | Placed orders with status and total |
-| `order_items` | Line items per order |
-| `popups` | Scheduled promotional popups |
-
----
-
-## 🚢 Deploying to Production
-
-1. Upload files via cPanel / FTP / Git
-2. Create MySQL database and import `Tamizhmart_schema.sql`
+1. Upload via FTP / Git to server
+2. Create MySQL DB → import `tamizhmart_db.sql`
 3. Update `config/db.php` with production credentials
-4. Enable HTTPS — Let's Encrypt via cPanel is free, no excuses
-5. Update `RewriteBase` in `.htaccess` if not at root
+4. Enable HTTPS (Let's Encrypt via cPanel — free)
+5. Ensure `RewriteBase /` in `.htaccess`
 6. `chmod 755 assets/uploads/*`
-7. Update PWA scope in `sw.js` if folder name changed
+7. Set Gmail App Password in `shop/includes/notifications.php` + `auth/forgot_password.php`
+8. Add Razorpay live keys in checkout files
 
 ---
 
 ## ⭐ Support the Project
 
-If this saved you time, money, or sanity — drop a ⭐ on GitHub.
-
-If you found a bug — open an issue.
-
-If you want to use this commercially — talk to **Sivabalaji** first.
+If TamizhMart saved you time, money, or sanity:
+- Drop a **⭐ on GitHub**
+- Open an **Issue** if you find a bug
+- Contact Sivabalaji before using commercially
 
 If you steal this and sell it — karma is real and so is copyright law. 🙏
 
 ---
 
-*Built with ❤️ in Tamil Nadu — Tamizhmart v1.0*
-*© 2025 Sivabalaji. All rights reserved.*
+<div align="center">
+
+**Built with ❤️ in Tamil Nadu, India**
+
+*TamizhMart v2.0 — August 2026*
+
+[![GitHub](https://img.shields.io/badge/GitHub-sivabalaji--tn-181717?style=flat-square&logo=github)](https://github.com/sivabalaji-tn)
+
+*© 2025–2026 Sivabalaji. All rights reserved.*
+
+</div>
