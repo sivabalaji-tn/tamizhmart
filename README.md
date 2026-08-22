@@ -439,7 +439,6 @@ If TamizhMart saved you time, money, or sanity:
 - Open an **Issue** if you find a bug
 - Contact Sivabalaji before using commercially
 
-If you steal this and sell it — karma is real and so is copyright law. 🙏
 
 ---
 
