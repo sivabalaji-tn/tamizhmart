@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/icons/icon-192.png" alt="TamizhMart Logo" width="96" height="96" style="border-radius:20px"/>
+<img src="assets/uploads/logos/logo_6a6449d0143b7.png" alt="TamizhMart Logo" width="96" height="96" style="border-radius:20px"/>
 
 # TamizhMart 🛍️
 
