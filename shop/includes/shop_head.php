@@ -4,35 +4,700 @@
 // ── This script is made by Siva Balaji sms ──────────────────────
 // ── Maintenance mode check ────────────────────────────────────
 $maint_row = $conn->query("SELECT setting_value FROM platform_settings WHERE setting_key='maintenance_mode'")->fetch_row();
+
 if ($maint_row && $maint_row[0] === '1') {
+
     $maint_msg_row = $conn->query("SELECT setting_value FROM platform_settings WHERE setting_key='maintenance_message'")->fetch_row();
-    $maint_msg = $maint_msg_row ? $maint_msg_row[0] : 'We are under maintenance. Back soon!';
+
+    $maint_msg = $maint_msg_row
+        ? $maint_msg_row[0]
+        : 'We are under maintenance. Back soon!';
+
     http_response_code(503);
     ?>
+
     <!DOCTYPE html>
     <html lang="en">
+
     <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Under Maintenance — <?= htmlspecialchars($shop['name']) ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:<?= htmlspecialchars($shop['theme_bg']??'#faf7f2') ?>;color:<?= htmlspecialchars($shop['theme_text']??'#1a1208') ?>;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;}
-    .icon{font-size:56px;margin-bottom:20px;animation:spin 4s linear infinite;display:inline-block;}
-    @keyframes spin{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-    h1{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:10px;}
-    p{font-size:15px;opacity:.55;line-height:1.65;max-width:360px;margin:0 auto;}
-    </style>
+
+        <meta charset="UTF-8">
+
+        <meta name="viewport"
+              content="width=device-width, initial-scale=1.0">
+
+        <meta name="robots" content="noindex, nofollow">
+
+        <title>
+            Under Maintenance — <?= htmlspecialchars($shop['name']) ?>
+        </title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+
+        <link rel="preconnect"
+              href="https://fonts.gstatic.com"
+              crossorigin>
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+            rel="stylesheet"
+        >
+
+        <style>
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            html {
+                height: 100%;
+            }
+
+            body {
+
+                font-family: 'DM Sans', sans-serif;
+
+                background:
+                    <?= htmlspecialchars($shop['theme_bg'] ?? '#faf7f2') ?>;
+
+                color:
+                    <?= htmlspecialchars($shop['theme_text'] ?? '#1a1208') ?>;
+
+                min-height: 100vh;
+
+                display: flex;
+
+                justify-content: center;
+
+                align-items: center;
+
+                padding: 24px;
+
+                overflow: hidden;
+
+                position: relative;
+            }
+
+
+            /* -----------------------------
+               BACKGROUND DECORATION
+            ------------------------------ */
+
+            body::before {
+
+                content: "";
+
+                position: absolute;
+
+                width: 500px;
+
+                height: 500px;
+
+                border-radius: 50%;
+
+                background:
+                    <?= htmlspecialchars($shop['theme_text'] ?? '#1a1208') ?>;
+
+                opacity: 0.035;
+
+                top: -250px;
+
+                right: -180px;
+
+                pointer-events: none;
+            }
+
+
+            body::after {
+
+                content: "";
+
+                position: absolute;
+
+                width: 380px;
+
+                height: 380px;
+
+                border-radius: 50%;
+
+                background:
+                    <?= htmlspecialchars($shop['theme_text'] ?? '#1a1208') ?>;
+
+                opacity: 0.025;
+
+                bottom: -220px;
+
+                left: -150px;
+
+                pointer-events: none;
+            }
+
+
+            /* -----------------------------
+               PAGE WRAPPER
+            ------------------------------ */
+
+            .maintenance-wrapper {
+
+                width: 100%;
+
+                max-width: 560px;
+
+                position: relative;
+
+                z-index: 2;
+            }
+
+
+            /* -----------------------------
+               STATUS
+            ------------------------------ */
+
+            .status {
+
+                display: flex;
+
+                justify-content: center;
+
+                margin-bottom: 18px;
+            }
+
+
+            .status-badge {
+
+                display: inline-flex;
+
+                align-items: center;
+
+                gap: 9px;
+
+                padding: 8px 14px;
+
+                border-radius: 100px;
+
+                font-size: 12px;
+
+                font-weight: 700;
+
+                letter-spacing: .5px;
+
+                text-transform: uppercase;
+
+                background: rgba(255,255,255,.62);
+
+                border: 1px solid rgba(0,0,0,.06);
+
+                box-shadow:
+                    0 4px 18px rgba(0,0,0,.04);
+
+                backdrop-filter: blur(14px);
+
+                -webkit-backdrop-filter: blur(14px);
+            }
+
+
+            .status-dot {
+
+                width: 8px;
+
+                height: 8px;
+
+                border-radius: 50%;
+
+                background: #f5a623;
+
+                box-shadow:
+                    0 0 0 5px rgba(245,166,35,.14);
+
+                animation: pulse 1.8s infinite;
+            }
+
+
+            @keyframes pulse {
+
+                0% {
+
+                    box-shadow:
+                        0 0 0 0 rgba(245,166,35,.30);
+
+                }
+
+                70% {
+
+                    box-shadow:
+                        0 0 0 8px rgba(245,166,35,0);
+
+                }
+
+                100% {
+
+                    box-shadow:
+                        0 0 0 0 rgba(245,166,35,0);
+
+                }
+            }
+
+
+            /* -----------------------------
+               MAIN CARD
+            ------------------------------ */
+
+            .maintenance-card {
+
+                position: relative;
+
+                overflow: hidden;
+
+                background: rgba(255,255,255,.72);
+
+                border: 1px solid rgba(255,255,255,.8);
+
+                border-radius: 28px;
+
+                padding: 50px 42px 42px;
+
+                text-align: center;
+
+                box-shadow:
+                    0 30px 80px rgba(0,0,0,.09),
+                    inset 0 1px 0 rgba(255,255,255,.9);
+
+                backdrop-filter: blur(22px);
+
+                -webkit-backdrop-filter: blur(22px);
+            }
+
+
+            .maintenance-card::before {
+
+                content: "";
+
+                position: absolute;
+
+                width: 200px;
+
+                height: 200px;
+
+                border-radius: 50%;
+
+                background:
+                    <?= htmlspecialchars($shop['theme_text'] ?? '#1a1208') ?>;
+
+                opacity: .025;
+
+                right: -100px;
+
+                top: -100px;
+            }
+
+
+            /* -----------------------------
+               ICON
+            ------------------------------ */
+
+            .maintenance-icon {
+
+                width: 86px;
+
+                height: 86px;
+
+                margin: 0 auto 28px;
+
+                border-radius: 24px;
+
+                display: flex;
+
+                align-items: center;
+
+                justify-content: center;
+
+                position: relative;
+
+                background:
+                    <?= htmlspecialchars($shop['theme_text'] ?? '#1a1208') ?>;
+
+                color:
+                    <?= htmlspecialchars($shop['theme_bg'] ?? '#faf7f2') ?>;
+
+                box-shadow:
+                    0 16px 40px rgba(0,0,0,.13);
+
+                animation: float 3.5s ease-in-out infinite;
+            }
+
+
+            .maintenance-icon svg {
+
+                width: 38px;
+
+                height: 38px;
+            }
+
+
+            @keyframes float {
+
+                0%, 100% {
+                    transform: translateY(0);
+                }
+
+                50% {
+                    transform: translateY(-7px);
+                }
+            }
+
+
+            /* -----------------------------
+               SHOP NAME
+            ------------------------------ */
+
+            .shop-label {
+
+                font-size: 12px;
+
+                font-weight: 700;
+
+                text-transform: uppercase;
+
+                letter-spacing: 2px;
+
+                opacity: .42;
+
+                margin-bottom: 10px;
+            }
+
+
+            .shop-name {
+
+                font-family: 'Syne', sans-serif;
+
+                font-size: clamp(27px, 5vw, 38px);
+
+                font-weight: 800;
+
+                letter-spacing: -1.4px;
+
+                line-height: 1.15;
+
+                margin-bottom: 14px;
+            }
+
+
+            /* -----------------------------
+               HEADING
+            ------------------------------ */
+
+            .maintenance-title {
+
+                font-family: 'Syne', sans-serif;
+
+                font-size: 18px;
+
+                font-weight: 700;
+
+                margin-bottom: 14px;
+
+                opacity: .88;
+            }
+
+
+            .maintenance-message {
+
+                max-width: 410px;
+
+                margin: 0 auto;
+
+                font-size: 14.5px;
+
+                line-height: 1.75;
+
+                opacity: .58;
+            }
+
+
+            /* -----------------------------
+               PROGRESS INDICATOR
+            ------------------------------ */
+
+            .progress-area {
+
+                margin-top: 34px;
+
+                padding-top: 28px;
+
+                border-top: 1px solid rgba(0,0,0,.07);
+            }
+
+
+            .progress-text {
+
+                display: flex;
+
+                justify-content: space-between;
+
+                align-items: center;
+
+                font-size: 11px;
+
+                font-weight: 700;
+
+                text-transform: uppercase;
+
+                letter-spacing: .8px;
+
+                opacity: .42;
+
+                margin-bottom: 10px;
+            }
+
+
+            .progress {
+
+                height: 5px;
+
+                width: 100%;
+
+                overflow: hidden;
+
+                border-radius: 20px;
+
+                background: rgba(0,0,0,.07);
+            }
+
+
+            .progress-bar {
+
+                height: 100%;
+
+                width: 38%;
+
+                border-radius: inherit;
+
+                background:
+                    <?= htmlspecialchars($shop['theme_text'] ?? '#1a1208') ?>;
+
+                animation: loading 2.3s ease-in-out infinite;
+            }
+
+
+            @keyframes loading {
+
+                0% {
+                    transform: translateX(-130%);
+                }
+
+                50% {
+                    transform: translateX(100%);
+                }
+
+                100% {
+                    transform: translateX(300%);
+                }
+            }
+
+
+            /* -----------------------------
+               FOOTER
+            ------------------------------ */
+
+            .maintenance-footer {
+
+                text-align: center;
+
+                font-size: 11px;
+
+                margin-top: 20px;
+
+                opacity: .38;
+
+                letter-spacing: .2px;
+            }
+
+
+            /* -----------------------------
+               MOBILE
+            ------------------------------ */
+
+            @media(max-width: 600px) {
+
+                body {
+                    padding: 18px;
+                }
+
+                .maintenance-card {
+
+                    padding:
+                        40px
+                        24px
+                        32px;
+
+                    border-radius: 24px;
+                }
+
+                .maintenance-icon {
+
+                    width: 76px;
+
+                    height: 76px;
+
+                    border-radius: 21px;
+                }
+
+                .maintenance-icon svg {
+
+                    width: 34px;
+
+                    height: 34px;
+                }
+
+                .shop-name {
+
+                    font-size: 28px;
+                }
+
+                .maintenance-message {
+
+                    font-size: 14px;
+                }
+            }
+
+        </style>
+
     </head>
+
+
     <body>
-    <div>
-        <div class="icon">🔧</div>
-        <h1><?= htmlspecialchars($shop['name']) ?></h1>
-        <p><?= htmlspecialchars($maint_msg) ?></p>
-    </div>
+
+        <main class="maintenance-wrapper">
+
+
+            <!-- STATUS -->
+
+            <div class="status">
+
+                <div class="status-badge">
+
+                    <span class="status-dot"></span>
+
+                    Store maintenance
+
+                </div>
+
+            </div>
+
+
+
+            <!-- MAIN CARD -->
+
+            <section class="maintenance-card">
+
+
+                <!-- ICON -->
+
+                <div class="maintenance-icon">
+
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+
+                        <circle cx="9" cy="20" r="1"></circle>
+
+                        <circle cx="19" cy="20" r="1"></circle>
+
+                        <path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"></path>
+
+                        <path d="M14 6l2-2"></path>
+
+                        <path d="M17 5l1.5 1.5"></path>
+
+                    </svg>
+
+                </div>
+
+
+                <div class="shop-label">
+
+                    Online Store
+
+                </div>
+
+
+                <h1 class="shop-name">
+
+                    <?= htmlspecialchars($shop['name']) ?>
+
+                </h1>
+
+
+                <div class="maintenance-title">
+
+                    We're improving your shopping experience.
+
+                </div>
+
+
+                <p class="maintenance-message">
+
+                    <?= htmlspecialchars($maint_msg) ?>
+
+                </p>
+
+
+
+                <!-- PROGRESS -->
+
+                <div class="progress-area">
+
+                    <div class="progress-text">
+
+                        <span>System maintenance</span>
+
+                        <span>In progress</span>
+
+                    </div>
+
+
+                    <div class="progress">
+
+                        <div class="progress-bar"></div>
+
+                    </div>
+
+                </div>
+
+
+            </section>
+
+
+
+            <!-- FOOTER -->
+
+            <div class="maintenance-footer">
+
+                <?= htmlspecialchars($shop['name']) ?>
+                &nbsp;•&nbsp;
+                Secure shopping experience
+
+            </div>
+
+
+        </main>
+
     </body>
+
     </html>
+
     <?php
+
     exit;
 }
 
@@ -43,17 +708,70 @@ if (!empty($shop['is_suspended'])) {
     <!DOCTYPE html>
     <html lang="en">
     <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Shop Unavailable</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
-    <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;background:#faf7f2;color:#1a1208;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;}h1{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;margin:16px 0 10px;}p{font-size:14px;opacity:.5;max-width:320px;margin:0 auto;}</style>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <meta name="robots" content="noindex,nofollow">
+        <title>Shop Unavailable — <?= htmlspecialchars($shop['name']) ?></title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:'DM Sans',sans-serif;background:<?= htmlspecialchars($shop['theme_bg']??'#faf7f2') ?>;color:<?= htmlspecialchars($shop['theme_text']??'#1a1208') ?>;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden}
+            body::before{content:"";position:absolute;width:500px;height:500px;border-radius:50%;background:currentColor;opacity:.025;top:-250px;right:-180px}
+            body::after{content:"";position:absolute;width:400px;height:400px;border-radius:50%;background:currentColor;opacity:.02;bottom:-230px;left:-160px}
+            .wrapper{width:100%;max-width:540px;position:relative;z-index:2;text-align:center}
+            .status{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:18px;border-radius:100px;background:rgba(255,255,255,.65);border:1px solid rgba(0,0,0,.06);font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;box-shadow:0 6px 20px rgba(0,0,0,.04);backdrop-filter:blur(12px)}
+            .status-dot{width:8px;height:8px;border-radius:50%;background:#e45858;box-shadow:0 0 0 5px rgba(228,88,88,.12)}
+            .card{background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.85);border-radius:28px;padding:48px 40px 38px;box-shadow:0 30px 80px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(20px);position:relative;overflow:hidden}
+            .card::before{content:"";position:absolute;width:190px;height:190px;border-radius:50%;background:currentColor;opacity:.02;right:-90px;top:-90px}
+            .icon{width:84px;height:84px;margin:0 auto 26px;border-radius:24px;display:flex;align-items:center;justify-content:center;background:currentColor;box-shadow:0 16px 40px rgba(0,0,0,.12)}
+            .icon svg{width:38px;height:38px;color:<?= htmlspecialchars($shop['theme_bg']??'#faf7f2') ?>}
+            .shop-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;opacity:.4;margin-bottom:9px}
+            .shop-name{font-family:'Syne',sans-serif;font-size:clamp(26px,5vw,36px);font-weight:800;letter-spacing:-1.2px;line-height:1.15;margin-bottom:16px}
+            .title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:12px}
+            .message{font-size:14.5px;line-height:1.7;opacity:.56;max-width:390px;margin:0 auto}
+            .notice{margin-top:30px;padding-top:24px;border-top:1px solid rgba(0,0,0,.07);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:600;opacity:.48}
+            .notice svg{width:15px;height:15px;flex-shrink:0}
+            .footer{margin-top:18px;font-size:11px;opacity:.34}
+            @media(max-width:600px){
+                body{padding:18px}
+                .card{padding:40px 24px 32px;border-radius:24px}
+                .icon{width:76px;height:76px;border-radius:21px}
+                .icon svg{width:34px;height:34px}
+                .shop-name{font-size:28px}
+                .message{font-size:14px}
+            }
+        </style>
     </head>
     <body>
-    <div>
-        <div style="font-size:52px;margin-bottom:4px;">🚫</div>
-        <h1>Shop Unavailable</h1>
-        <p>This shop is currently unavailable. Please check back later.</p>
-    </div>
+        <main class="wrapper">
+            <div class="status">
+                <span class="status-dot"></span>
+                Store temporarily unavailable
+            </div>
+            <section class="card">
+                <div class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M5.6 5.6l12.8 12.8"></path>
+                    </svg>
+                </div>
+                <div class="shop-label">Online Store</div>
+                <h1 class="shop-name"><?= htmlspecialchars($shop['name']) ?></h1>
+                <div class="title">This store is currently unavailable</div>
+                <p class="message">We're unable to accept visits or orders from this store at the moment. Please check back again later.</p>
+                <div class="notice">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 8v4"></path>
+                        <path d="M12 16h.01"></path>
+                    </svg>
+                    Store access has been temporarily restricted
+                </div>
+            </section>
+            <div class="footer"><?= htmlspecialchars($shop['name']) ?> • Store status page</div>
+        </main>
     </body>
     </html>
     <?php

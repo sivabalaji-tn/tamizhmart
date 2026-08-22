@@ -179,7 +179,7 @@ tailwind.config = {
       <?= htmlspecialchars($site_city) ?>
     </span>
   </div>
-  <a href="auth/register.php"
+  <a href="owner/register.php"
      class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-dark text-gold font-bold text-xs sm:text-[13.5px] flex-shrink-0 whitespace-nowrap shadow-nav transition-all duration-200 hover:bg-gold hover:text-dark hover:-translate-y-px">
     <i class="bi bi-shop"></i>
     <span class="hidden sm:inline">Register Your Shop</span>
@@ -436,7 +436,7 @@ tailwind.config = {
       <p class="text-white/45 max-w-md mx-auto mb-9 text-base leading-relaxed">
         Set up your branded online store in minutes. Reach customers across <?= htmlspecialchars($site_city) ?> and grow your business.
       </p>
-      <a href="auth/register.php"
+      <a href="owner/register.php"
          class="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-[15px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
          style="background:#c8a97e;color:#1a1208;box-shadow:0 8px 28px rgba(200,169,126,.35);">
         <i class="bi bi-shop"></i> Register Your Shop — Free
@@ -458,7 +458,7 @@ tailwind.config = {
     </div>
     <div>
       <div class="text-[11.5px] font-bold tracking-wider uppercase text-white/20 mb-3">For Shops</div>
-      <a href="auth/register.php" class="text-[13.5px] text-white/30 hover:text-gold transition-colors block">
+      <a href="owner/register.php" class="text-[13.5px] text-white/30 hover:text-gold transition-colors block">
         <i class="bi bi-shop mr-1.5"></i>Register Your Shop
       </a>
     </div>
