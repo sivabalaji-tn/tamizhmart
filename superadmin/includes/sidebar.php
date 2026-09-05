@@ -544,6 +544,9 @@ $pending_orders = $conn->query("SELECT COUNT(*) FROM orders WHERE status='pendin
         <a href="commission_logs.php" class="nav-item <?= $current_page==='commission_logs.php'?'active':'' ?>">
             <i class="bi bi-journal-text"></i> Audit & Commission Logs
         </a>
+        <a href="campaigns.php" class="nav-item <?= $current_page==='campaigns.php'?'active':'' ?>">
+            <i class="bi bi-envelope-paper-fill"></i> Email Campaign Control
+        </a>
 
         <div class="nav-section-label">System Operations</div>
         <a href="settings.php" class="nav-item <?= $current_page==='settings.php'?'active':'' ?>">

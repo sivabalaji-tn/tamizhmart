@@ -57,22 +57,64 @@ $rz_on  = ($settings_map['razorpay_enabled'] ?? '0') === '1'
           && !empty($settings_map['razorpay_key_secret']);
 $rz_key = $settings_map['razorpay_key_id'] ?? '';
 
+// ── Coupon helper — server-side validation ────────────────────
+function validateCouponServer($conn, $shop_id, $code, $subtotal): array {
+    if (!$code) return ['valid' => false, 'discount' => 0.0, 'coupon_id' => null];
+    $code = strtoupper(trim($code));
+    $st   = $conn->prepare("SELECT * FROM coupons WHERE shop_id=? AND code=? AND is_active=1 LIMIT 1");
+    $st->bind_param('is', $shop_id, $code);
+    $st->execute();
+    $c = $st->get_result()->fetch_assoc();
+    if (!$c) return ['valid' => false, 'discount' => 0.0, 'coupon_id' => null];
+    // Expiry
+    if ($c['expires_at'] && $c['expires_at'] !== '0000-00-00' && $c['expires_at'] < date('Y-m-d'))
+        return ['valid' => false, 'discount' => 0.0, 'coupon_id' => null];
+    // Usage limit
+    if ($c['max_uses'] !== null && $c['used_count'] >= (int)$c['max_uses'])
+        return ['valid' => false, 'discount' => 0.0, 'coupon_id' => null];
+    // Min order
+    if ($subtotal < floatval($c['min_order']))
+        return ['valid' => false, 'discount' => 0.0, 'coupon_id' => null];
+    // Compute discount
+    $discount = ($c['type'] === 'percent')
+        ? min(round($subtotal * floatval($c['value']) / 100, 2), $subtotal)
+        : min(floatval($c['value']), $subtotal);
+    return ['valid' => true, 'discount' => $discount, 'coupon_id' => (int)$c['id']];
+}
+
 // ── COD POST — runs before any HTML output ────────────────────
 $cod_done = false; $cod_order_num = ''; $err = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cod') {
-    $address = trim($_POST['address'] ?? '');
-    $notes   = trim($_POST['notes']   ?? '');
+    $address      = trim($_POST['address']     ?? '');
+    $notes        = trim($_POST['notes']       ?? '');
+    $coupon_code  = strtoupper(trim($_POST['coupon_code'] ?? ''));
+
     if (!$address) {
         $err = 'Please enter your delivery address.';
     } else {
+        // Server-side coupon re-validation (never trust client-sent discount)
+        $cv       = validateCouponServer($conn, $shop_id, $coupon_code, $subtotal);
+        $discount = $cv['valid'] ? $cv['discount'] : 0.0;
+        $final_total = round($subtotal - $discount, 2);
+
         $conn->begin_transaction();
         try {
             $nxt = (int)$conn->query("SELECT COALESCE(MAX(shop_order_number),0)+1 FROM orders WHERE shop_id=$shop_id")->fetch_row()[0];
-            $ins = $conn->prepare("INSERT INTO orders (shop_id,user_id,total_amount,status,payment_method,payment_status,address,notes,shop_order_number) VALUES (?,?,?,'pending','cod','pending',?,?,?)");
-            $ins->bind_param('iidssi', $shop_id, $user_id, $subtotal, $address, $notes, $nxt);
+            $ins = $conn->prepare(
+                "INSERT INTO orders
+                    (shop_id, user_id, total_amount, discount_amount, coupon_code,
+                     status, payment_method, payment_status, address, notes, shop_order_number)
+                 VALUES (?,?,?,?,?,'pending','cod','pending',?,?,?)"
+            );
+            $applied_code = $cv['valid'] ? $coupon_code : null;
+            $ins->bind_param('iiddsssi',
+                $shop_id, $user_id, $final_total, $discount, $applied_code,
+                $address, $notes, $nxt
+            );
             $ins->execute();
             $oid = (int)$conn->insert_id;
+
             foreach ($items as $it) {
                 $oi = $conn->prepare("INSERT INTO order_items (order_id,product_id,quantity,price) VALUES (?,?,?,?)");
                 $oi->bind_param('iiid', $oid, $it['pid'], $it['quantity'], $it['fp']);
@@ -83,11 +125,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cod')
             }
             $conn->query("DELETE FROM cart WHERE user_id=$user_id AND shop_id=$shop_id");
 
-            // ── Log commission if shop is on a commission plan ────
+            // ── Increment coupon usage ────────────────────────
+            if ($cv['valid'] && $cv['coupon_id']) {
+                $conn->query("UPDATE coupons SET used_count=used_count+1 WHERE id={$cv['coupon_id']}");
+            }
+
+            // ── Log commission on PRE-DISCOUNT subtotal ───────
+            // Commission is always on the original cart value, not the discounted total.
             $comm_q = $conn->query("SELECT p.commission_rate FROM shop_subscriptions ss JOIN plans p ON ss.plan_id=p.id WHERE ss.shop_id=$shop_id AND p.commission_rate > 0 ORDER BY ss.id DESC LIMIT 1");
             if ($comm_row = $comm_q->fetch_assoc()) {
-                $rate   = floatval($comm_row['commission_rate']);
-                $comm_amount = round($subtotal * $rate / 100, 2);
+                $rate        = floatval($comm_row['commission_rate']);
+                $comm_amount = round($subtotal * $rate / 100, 2); // $subtotal = pre-discount
                 $conn->query("INSERT INTO commission_log (shop_id, order_id, order_amount, commission_rate, commission_amount) VALUES ($shop_id, $oid, $subtotal, $rate, $comm_amount)");
             }
 
@@ -96,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cod')
             $cod_order_num = str_pad($nxt, 4, '0', STR_PAD_LEFT);
             try {
                 require_once 'includes/notifications.php';
-                sendOrderNotifications($conn, $oid, $shop, $user, $items, $subtotal, $settings_map);
+                sendOrderNotifications($conn, $oid, $shop, $user, $items, $final_total, $settings_map);
             } catch (Throwable $e) {}
         } catch (Throwable $e) {
             $conn->rollback();
@@ -393,7 +441,7 @@ requireCustomerLogin($shop);
                     <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;">Order Summary</div>
                     <div style="font-size:13px;color:var(--text-muted);margin-top:2px;"><?= count($items) ?> item<?= count($items)!=1?'s':'' ?></div>
                 </div>
-                <div style="padding:4px 20px;">
+                <div style="padding:4px 20px 0;">
                     <?php foreach ($items as $it): ?>
                     <div class="sum-item">
                         <div class="sum-thumb">
@@ -417,18 +465,50 @@ requireCustomerLogin($shop);
                     </div>
                     <?php endforeach; ?>
                 </div>
+
+                <!-- ── Coupon input ── -->
+                <div style="padding:12px 20px;border-top:1px solid var(--border);">
+                    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                        <i class="bi bi-ticket-perforated" style="color:var(--primary);margin-right:4px;"></i>Discount Code
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <input type="text" id="couponInput"
+                            placeholder="Enter coupon code"
+                            maxlength="30"
+                            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+                            class="input-shop"
+                            style="flex:1;font-family:monospace;font-size:13px;letter-spacing:1px;font-weight:700;padding:8px 10px;">
+                        <button type="button" onclick="applyCoupon()"
+                            style="padding:8px 14px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;"
+                            id="couponBtn">
+                            Apply
+                        </button>
+                    </div>
+                    <div id="couponMsg" style="margin-top:7px;font-size:12.5px;display:none;"></div>
+                </div>
+
+                <!-- ── Price breakdown ── -->
                 <div style="padding:14px 20px;border-top:1px solid var(--border);">
                     <div style="display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-muted);margin-bottom:7px;">
                         <span>Subtotal</span><span>&#8377;<?= number_format($subtotal,2) ?></span>
+                    </div>
+                    <!-- Discount row — hidden by default, shown when coupon applied -->
+                    <div id="discountRow" style="display:none;justify-content:space-between;font-size:13.5px;margin-bottom:7px;">
+                        <span style="color:#16a34a;font-weight:600;">
+                            <i class="bi bi-tag-fill" style="margin-right:3px;"></i>
+                            Coupon (<span id="appliedCode">-</span>)
+                        </span>
+                        <span style="color:#16a34a;font-weight:700;">−&#8377;<span id="discountAmt">0.00</span></span>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-muted);margin-bottom:7px;">
                         <span>Delivery</span><span style="color:#16a34a;font-weight:600;">Free</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;padding-top:12px;border-top:1px solid var(--border);margin-top:4px;">
                         <span>Total</span>
-                        <span style="color:var(--primary);">&#8377;<?= number_format($subtotal,2) ?></span>
+                        <span style="color:var(--primary);" id="grandTotal">&#8377;<?= number_format($subtotal,2) ?></span>
                     </div>
                 </div>
+
                 <div style="padding:0 20px 20px;">
                     <button class="co-btn" id="mainBtn" onclick="handlePlace()">
                         <i class="bi bi-bag-check" id="btnIco"></i>
@@ -456,13 +536,107 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
 (function() {
     const RZ_ON    = ' . ($rz_on ? 'true' : 'false') . ';
     const RZ_KEY   = ' . json_encode($rz_key) . ';
-    const TOTAL    = ' . json_encode($subtotal) . ';
+    const SUBTOTAL = ' . json_encode($subtotal) . ';   // pre-discount cart total
     const SHOP_ID  = ' . json_encode($shop_id) . ';
     const SLUG     = ' . json_encode($slug) . ';
     const U_NAME   = ' . json_encode($user['name'] ?? '') . ';
     const U_EMAIL  = ' . json_encode($user['email'] ?? '') . ';
     const U_PHONE  = ' . json_encode($user['phone'] ?? '') . ';
 
+    // ── Coupon state ──────────────────────────────────────────
+    let appliedCouponCode   = "";
+    let appliedDiscountAmt  = 0;
+    let finalTotal          = SUBTOTAL;
+
+    function fmtINR(n) {
+        return "₹" + parseFloat(n).toLocaleString("en-IN", {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    // ── Coupon apply ──────────────────────────────────────────
+    window.applyCoupon = async function() {
+        const code = document.getElementById("couponInput").value.trim().toUpperCase();
+        const msgEl = document.getElementById("couponMsg");
+        const btn   = document.getElementById("couponBtn");
+
+        if (!code) {
+            showCouponMsg("Please enter a coupon code.", false);
+            return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = "Checking...";
+        msgEl.style.display = "none";
+
+        try {
+            const r = await fetch("coupon_check.php", {
+                method:  "POST",
+                headers: { "Content-Type": "application/json" },
+                body:    JSON.stringify({ shop_id: SHOP_ID, code, subtotal: SUBTOTAL })
+            });
+            const data = await r.json();
+
+            if (data.valid) {
+                appliedCouponCode  = code;
+                appliedDiscountAmt = parseFloat(data.discount_amount);
+                finalTotal         = Math.max(0, SUBTOTAL - appliedDiscountAmt);
+                updateSummaryUI();
+                showCouponMsg("✓ " + data.message, true);
+                btn.textContent = "Remove";
+                btn.onclick     = removeCoupon;
+                btn.style.background = "#16a34a";
+            } else {
+                showCouponMsg("✗ " + data.message, false);
+                btn.disabled    = false;
+                btn.textContent = "Apply";
+            }
+        } catch(e) {
+            showCouponMsg("Network error. Please try again.", false);
+            btn.disabled    = false;
+            btn.textContent = "Apply";
+        }
+    };
+
+    window.removeCoupon = function() {
+        appliedCouponCode  = "";
+        appliedDiscountAmt = 0;
+        finalTotal         = SUBTOTAL;
+        document.getElementById("couponInput").value = "";
+        document.getElementById("couponMsg").style.display = "none";
+        updateSummaryUI();
+        const btn = document.getElementById("couponBtn");
+        btn.disabled    = false;
+        btn.textContent = "Apply";
+        btn.onclick     = applyCoupon;
+        btn.style.background = "var(--primary)";
+        pickPay(curPay); // reset button text
+    };
+
+    function showCouponMsg(msg, success) {
+        const el = document.getElementById("couponMsg");
+        el.textContent  = msg;
+        el.style.display = "block";
+        el.style.color   = success ? "#16a34a" : "#dc2626";
+        el.style.fontWeight = "600";
+    }
+
+    function updateSummaryUI() {
+        // Show / hide discount row
+        const dRow = document.getElementById("discountRow");
+        if (appliedDiscountAmt > 0) {
+            dRow.style.display = "flex";
+            document.getElementById("appliedCode").textContent = appliedCouponCode;
+            document.getElementById("discountAmt").textContent =
+                parseFloat(appliedDiscountAmt).toLocaleString("en-IN", {minimumFractionDigits:2, maximumFractionDigits:2});
+        } else {
+            dRow.style.display = "none";
+        }
+        // Update grand total display
+        document.getElementById("grandTotal").textContent = fmtINR(finalTotal);
+        // Update Pay button if online is selected
+        pickPay(curPay);
+    }
+
+    // ── Payment method ────────────────────────────────────────
     let curPay = RZ_ON ? "online" : "cod";
 
     window.pickPay = function(m) {
@@ -473,7 +647,7 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
         const t = document.getElementById("btnTxt");
         const i = document.getElementById("btnIco");
         if (m === "online") {
-            t.textContent = "Pay ₹" + TOTAL.toFixed(2);
+            t.textContent = "Pay " + fmtINR(finalTotal);
             i.className   = "bi bi-credit-card";
         } else {
             t.textContent = "Place Order";
@@ -492,6 +666,7 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
         pickPay(curPay);
     }
 
+    // ── Place order ───────────────────────────────────────────
     window.handlePlace = function() {
         const addr = document.getElementById("addrField").value.trim();
         if (!addr) {
@@ -505,15 +680,15 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
 
         if (curPay === "cod") {
             lock("Placing Order...");
-            /* Submit as plain form POST */
             const form = document.createElement("form");
             form.method = "POST";
             form.action = "";
             [
-                ["action",  "cod"],
-                ["address", addr],
-                ["notes",   document.getElementById("notesField").value],
-                ["shop",    SLUG]
+                ["action",       "cod"],
+                ["address",      addr],
+                ["notes",        document.getElementById("notesField").value],
+                ["shop",         SLUG],
+                ["coupon_code",  appliedCouponCode]  // pass applied coupon to PHP
             ].forEach(([n,v]) => {
                 const inp = document.createElement("input");
                 inp.type = "hidden"; inp.name = n; inp.value = v;
@@ -526,6 +701,7 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
         }
     };
 
+    // ── Razorpay ──────────────────────────────────────────────
     async function doRazorpay(addr) {
         lock("Opening Payment...");
         let rzOrderData;
@@ -533,7 +709,12 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
             const r = await fetch("razorpay_create_order.php", {
                 method:  "POST",
                 headers: { "Content-Type": "application/json" },
-                body:    JSON.stringify({ shop_id: SHOP_ID, amount: TOTAL })
+                body:    JSON.stringify({
+                    shop_id:         SHOP_ID,
+                    amount:          SUBTOTAL,           // server recalculates from cart
+                    discount_amount: appliedDiscountAmt, // passed so server can deduct
+                    coupon_code:     appliedCouponCode
+                })
             });
             rzOrderData = await r.json();
         } catch(e) {
@@ -546,7 +727,7 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
             unlock(); return;
         }
 
-        unlock(); /* unlock before opening popup so user can cancel */
+        unlock();
 
         const rzp = new Razorpay({
             key:         RZ_KEY,
@@ -569,10 +750,12 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
                             razorpay_order_id:   resp.razorpay_order_id,
                             razorpay_payment_id: resp.razorpay_payment_id,
                             razorpay_signature:  resp.razorpay_signature,
-                            shop_id: SHOP_ID,
-                            address: addr,
-                            notes:   document.getElementById("notesField").value,
-                            amount:  TOTAL
+                            shop_id:             SHOP_ID,
+                            address:             addr,
+                            notes:               document.getElementById("notesField").value,
+                            amount:              SUBTOTAL,            // server uses cart total
+                            coupon_code:         appliedCouponCode,   // server re-validates
+                            discount_amount:     appliedDiscountAmt
                         })
                     });
                     vd = await vr.json();
@@ -582,7 +765,6 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
                 }
 
                 if (vd.success) {
-                    /* Show success panel on the same page — no redirect needed */
                     document.getElementById("coForm").style.display = "none";
                     document.getElementById("rzOrderNum").innerHTML = \'<i class="bi bi-receipt"></i> Order #\' + vd.order_number;
                     const s = document.getElementById("rzSuccess");
@@ -594,9 +776,7 @@ $extra_js = ($rz_on ? '<script src="https://checkout.razorpay.com/v1/checkout.js
                 }
             },
 
-            modal: {
-                ondismiss: unlock
-            }
+            modal: { ondismiss: unlock }
         });
 
         rzp.on("payment.failed", function(r) {

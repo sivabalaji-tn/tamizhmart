@@ -607,7 +607,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="bi bi-tags-fill"></i> Categories
         </a>
         <a href="popups.php" class="nav-item <?= $current_page === 'popups.php' ? 'active' : '' ?>">
-            <i class="bi bi-megaphone-fill"></i> Offers & Popups
+            <i class="bi bi-megaphone-fill"></i> Offers &amp; Popups
+        </a>
+        <a href="coupons.php" class="nav-item <?= $current_page === 'coupons.php' ? 'active' : '' ?>">
+            <i class="bi bi-ticket-perforated-fill"></i> Coupons
+        </a>
+        <a href="campaigns.php" class="nav-item <?= $current_page === 'campaigns.php' ? 'active' : '' ?>">
+            <i class="bi bi-envelope-paper-heart-fill"></i> Email Campaigns
         </a>
 
         <div class="nav-section-label">Configuration</div>

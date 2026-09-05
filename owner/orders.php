@@ -281,6 +281,18 @@ function viewOrder(orderId, order) {
                 </div>
             </div>
 
+            <!-- Coupon + Total breakdown -->
+            ${(parseFloat(order.discount_amount) > 0) ? `
+            <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);">
+                    <span>Subtotal</span>
+                    <span>₹${(parseFloat(order.total_amount) + parseFloat(order.discount_amount)).toLocaleString('en-IN',{minimumFractionDigits:2})}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:#16a34a;font-weight:600;">
+                    <span><i class="bi bi-tag-fill" style="margin-right:4px;"></i>Coupon (${order.coupon_code || '—'})</span>
+                    <span>−₹${parseFloat(order.discount_amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</span>
+                </div>
+            </div>` : ''}
             <!-- Total -->
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;">
                 <div style="font-size:13.5px;font-weight:600;color:#1E3A8A;">Order Grand Total</div>
