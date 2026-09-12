@@ -5,7 +5,9 @@
  *      Commission tracked per subscription period via commission_log.
  */
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__ . '/includes/audit.php';
+saAuditRequireAdmin();
 if (empty($_SESSION['superadmin_id'])) { header('Location: login.php'); exit; }
 
 $success = ''; $error = '';
@@ -34,120 +36,132 @@ $conn->query("CREATE TABLE IF NOT EXISTS commission_collections (
 
 // ── POST handlers ─────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    try {
+        $audit_context = saAuditStart($conn, 'subscriptions', $_POST);
+        $action = $_POST['action'] ?? '';
 
-    // ── Activate / Renew — INSERT new row, mark old as 'completed' ──
-    if ($action === 'activate') {
-        $shop_id     = intval($_POST['shop_id']);
-        $plan_id     = intval($_POST['plan_id']);
-        $payment_ref = trim($_POST['payment_ref']  ?? '');
-        $payment_note= trim($_POST['payment_note'] ?? '');
-        $start       = trim($_POST['start_date']   ?? date('Y-m-d'));
+        // ── Activate / Renew — INSERT new row, mark old as 'completed' ──
+        if ($action === 'activate') {
+            $shop_id     = intval($_POST['shop_id']);
+            $plan_id     = intval($_POST['plan_id']);
+            $payment_ref = trim($_POST['payment_ref']  ?? '');
+            $payment_note= trim($_POST['payment_note'] ?? '');
+            $start       = trim($_POST['start_date']   ?? date('Y-m-d'));
+            $parsed_start = DateTimeImmutable::createFromFormat('!Y-m-d', $start);
+            if (!$parsed_start || $parsed_start->format('Y-m-d') !== $start) {
+                $error = 'Select a valid start date.';
+                goto DONE;
+            }
 
-        $plan = $conn->query("SELECT * FROM plans WHERE id=$plan_id LIMIT 1")->fetch_assoc();
-        if (!$plan) { $error = 'Invalid plan.'; goto DONE; }
+            $plan = $conn->query("SELECT * FROM plans WHERE id=$plan_id LIMIT 1")->fetch_assoc();
+            if (!$plan) { $error = 'Invalid plan.'; goto DONE; }
 
-        $expires = date('Y-m-d H:i:s', strtotime("$start +{$plan['duration_days']} days"));
-        $grace   = date('Y-m-d H:i:s', strtotime("$expires +7 days"));
+            $expires = date('Y-m-d H:i:s', strtotime("$start +{$plan['duration_days']} days"));
+            $grace   = date('Y-m-d H:i:s', strtotime("$expires +7 days"));
 
-        // Mark current subscription as 'completed' — keeps it as historical record
-        $conn->query("UPDATE shop_subscriptions SET status='completed'
-                      WHERE shop_id=$shop_id AND status IN ('active','trial','grace')
-                      ORDER BY id DESC LIMIT 1");
+            // Mark current subscription as 'completed' — keeps it as historical record
+            $conn->query("UPDATE shop_subscriptions SET status='completed'
+                          WHERE shop_id=$shop_id AND status IN ('active','trial','grace')
+                          ORDER BY id DESC LIMIT 1");
 
-        // Always INSERT a new subscription row — commission tracking resets naturally per period
-        $conn->query("INSERT INTO shop_subscriptions
-            (shop_id,plan_id,status,started_at,expires_at,grace_until,payment_ref,payment_note,activated_by,activated_at)
-            VALUES ($shop_id,$plan_id,'active','$start','$expires','$grace',
-            '".addslashes($payment_ref)."','".addslashes($payment_note)."',$admin_id,NOW())");
+            // Always INSERT a new subscription row — commission tracking resets naturally per period
+            $conn->query("INSERT INTO shop_subscriptions
+                (shop_id,plan_id,status,started_at,expires_at,grace_until,payment_ref,payment_note,activated_by,activated_at)
+                VALUES ($shop_id,$plan_id,'active','$start','$expires','$grace',
+                '".addslashes($payment_ref)."','".addslashes($payment_note)."',$admin_id,NOW())");
 
-        $conn->query("UPDATE shops SET is_suspended=0 WHERE id=$shop_id");
-        $success = "Shop activated on {$plan['name']} plan until " . date('d M Y', strtotime($expires)) . ".";
-    }
-
-    // ── Suspend ──────────────────────────────────────────────────────
-    if ($action === 'suspend') {
-        $shop_id = intval($_POST['shop_id']);
-        $conn->query("UPDATE shop_subscriptions SET status='suspended'
-                      WHERE shop_id=$shop_id AND status NOT IN ('completed','cancelled')
-                      ORDER BY id DESC LIMIT 1");
-        $conn->query("UPDATE shops SET is_suspended=1 WHERE id=$shop_id");
-        $success = "Shop suspended.";
-    }
-
-    // ── Restore ──────────────────────────────────────────────────────
-    if ($action === 'restore') {
-        $shop_id = intval($_POST['shop_id']);
-        $conn->query("UPDATE shop_subscriptions SET status='grace'
-                      WHERE shop_id=$shop_id AND status='suspended'
-                      ORDER BY id DESC LIMIT 1");
-        $conn->query("UPDATE shops SET is_suspended=0 WHERE id=$shop_id");
-        $success = "Shop restored to grace period.";
-    }
-
-    // ── Extend ───────────────────────────────────────────────────────
-    if ($action === 'extend') {
-        $sub_id = intval($_POST['sub_id']);
-        $days   = intval($_POST['extend_days'] ?? 30);
-        $conn->query("UPDATE shop_subscriptions SET
-            expires_at  = DATE_ADD(expires_at,  INTERVAL $days DAY),
-            grace_until = DATE_ADD(grace_until, INTERVAL $days DAY),
-            status='active', activated_by=$admin_id, activated_at=NOW()
-            WHERE id=$sub_id");
-        $conn->query("UPDATE shops s JOIN shop_subscriptions ss ON s.id=ss.shop_id
-                      SET s.is_suspended=0 WHERE ss.id=$sub_id");
-        $success = "Subscription extended by $days days.";
-    }
-
-    // ── Collect Commission ────────────────────────────────────────────
-    if ($action === 'collect_commission') {
-        $shop_id = intval($_POST['shop_id']);
-        $sub_id  = intval($_POST['sub_id']);
-        $note    = trim($_POST['note'] ?? '');
-
-        $sub = $conn->query("SELECT started_at, expires_at FROM shop_subscriptions
-                             WHERE id=$sub_id AND shop_id=$shop_id LIMIT 1")->fetch_assoc();
-        if (!$sub) { $error = 'Subscription not found.'; goto DONE; }
-
-        $pending = $conn->query("
-            SELECT COUNT(*)                     AS cnt,
-                   COALESCE(SUM(order_amount),0)    AS revenue,
-                   COALESCE(SUM(commission_amount),0) AS commission,
-                   MAX(commission_rate)             AS rate
-            FROM commission_log
-            WHERE shop_id=$shop_id AND collected=0
-              AND created_at >= '{$sub['started_at']}'
-        ")->fetch_assoc();
-
-        if ($pending && (float)$pending['commission'] > 0) {
-            $period_end = date('Y-m-d H:i:s');
-            $rv  = (float)$pending['revenue'];
-            $cnt = (int)$pending['cnt'];
-            $cm  = (float)$pending['commission'];
-            $rt  = (float)$pending['rate'];
-            $ps  = $sub['started_at'];
-
-            $stmt = $conn->prepare("INSERT INTO commission_collections
-                (shop_id,subscription_id,total_revenue,order_count,commission_amount,
-                 commission_rate,period_start,period_end,collected_by,note)
-                VALUES (?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param("iididdssis",
-                $shop_id, $sub_id, $rv, $cnt, $cm, $rt, $ps, $period_end, $admin_id, $note);
-            $stmt->execute();
-
-            $now = date('Y-m-d H:i:s');
-            $conn->query("UPDATE commission_log SET collected=1, collected_at='$now'
-                          WHERE shop_id=$shop_id AND collected=0
-                            AND created_at >= '{$sub['started_at']}'");
-
-            $amount_fmt = number_format($pending['commission'], 2);
-            $success = "Commission of \xe2\x82\xb9{$amount_fmt} from {$pending['cnt']} orders collected & logged.";
-        } else {
-            $error = "No pending commission to collect for this shop.";
+            $conn->query("UPDATE shops SET is_suspended=0 WHERE id=$shop_id");
+            $success = "Shop activated on {$plan['name']} plan until " . date('d M Y', strtotime($expires)) . ".";
         }
+
+        // ── Suspend ──────────────────────────────────────────────────────
+        if ($action === 'suspend') {
+            $shop_id = intval($_POST['shop_id']);
+            $conn->query("UPDATE shop_subscriptions SET status='suspended'
+                          WHERE shop_id=$shop_id AND status NOT IN ('completed','cancelled')
+                          ORDER BY id DESC LIMIT 1");
+            $conn->query("UPDATE shops SET is_suspended=1 WHERE id=$shop_id");
+            $success = "Shop suspended.";
+        }
+
+        // ── Restore ──────────────────────────────────────────────────────
+        if ($action === 'restore') {
+            $shop_id = intval($_POST['shop_id']);
+            $conn->query("UPDATE shop_subscriptions SET status='grace'
+                          WHERE shop_id=$shop_id AND status='suspended'
+                          ORDER BY id DESC LIMIT 1");
+            $conn->query("UPDATE shops SET is_suspended=0 WHERE id=$shop_id");
+            $success = "Shop restored to grace period.";
+        }
+
+        // ── Extend ───────────────────────────────────────────────────────
+        if ($action === 'extend') {
+            $sub_id = intval($_POST['sub_id']);
+            $days   = intval($_POST['extend_days'] ?? 30);
+            $conn->query("UPDATE shop_subscriptions SET
+                expires_at  = DATE_ADD(expires_at,  INTERVAL $days DAY),
+                grace_until = DATE_ADD(grace_until, INTERVAL $days DAY),
+                status='active', activated_by=$admin_id, activated_at=NOW()
+                WHERE id=$sub_id");
+            $conn->query("UPDATE shops s JOIN shop_subscriptions ss ON s.id=ss.shop_id
+                          SET s.is_suspended=0 WHERE ss.id=$sub_id");
+            $success = "Subscription extended by $days days.";
+        }
+
+        // ── Collect Commission ────────────────────────────────────────────
+        if ($action === 'collect_commission') {
+            $shop_id = intval($_POST['shop_id']);
+            $sub_id  = intval($_POST['sub_id']);
+            $note    = trim($_POST['note'] ?? '');
+
+            $sub = $conn->query("SELECT started_at, expires_at FROM shop_subscriptions
+                                 WHERE id=$sub_id AND shop_id=$shop_id LIMIT 1")->fetch_assoc();
+            if (!$sub) { $error = 'Subscription not found.'; goto DONE; }
+
+            $pending = $conn->query("
+                SELECT COUNT(*)                     AS cnt,
+                       COALESCE(SUM(order_amount),0)    AS revenue,
+                       COALESCE(SUM(commission_amount),0) AS commission,
+                       MAX(commission_rate)             AS rate
+                FROM commission_log
+                WHERE shop_id=$shop_id AND collected=0
+                  AND created_at >= '{$sub['started_at']}'
+            ")->fetch_assoc();
+
+            if ($pending && (float)$pending['commission'] > 0) {
+                $period_end = date('Y-m-d H:i:s');
+                $rv  = (float)$pending['revenue'];
+                $cnt = (int)$pending['cnt'];
+                $cm  = (float)$pending['commission'];
+                $rt  = (float)$pending['rate'];
+                $ps  = $sub['started_at'];
+
+                $stmt = $conn->prepare("INSERT INTO commission_collections
+                    (shop_id,subscription_id,total_revenue,order_count,commission_amount,
+                     commission_rate,period_start,period_end,collected_by,note)
+                    VALUES (?,?,?,?,?,?,?,?,?,?)");
+                $stmt->bind_param("iididdssis",
+                    $shop_id, $sub_id, $rv, $cnt, $cm, $rt, $ps, $period_end, $admin_id, $note);
+                $stmt->execute();
+
+                $now = date('Y-m-d H:i:s');
+                $conn->query("UPDATE commission_log SET collected=1, collected_at='$now'
+                              WHERE shop_id=$shop_id AND collected=0
+                                AND created_at >= '{$sub['started_at']}'");
+
+                $amount_fmt = number_format($pending['commission'], 2);
+                $success = "Commission of \xe2\x82\xb9{$amount_fmt} from {$pending['cnt']} orders collected & logged.";
+            } else {
+                $error = "No pending commission to collect for this shop.";
+            }
+        }
+        DONE:
+        saAuditFinish($conn, $audit_context, $success, $error);
+    } catch (Throwable $exception) {
+        $success = '';
+        $error = saAuditFailure($conn, $exception);
     }
 }
-DONE:
 
 // ── Filters ───────────────────────────────────────────────────────
 $filter_status = $_GET['status'] ?? 'all';
@@ -224,7 +238,7 @@ function statusBadge($status, $expires_at) {
 }
 ?>
 <style>
-.sub-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:700;}
+.sub-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:11.5px;font-weight:700;}
 .badge-success{background:rgba(16,185,129,.12);color:#059669;}
 .badge-warning{background:rgba(251,191,36,.12);color:#d97706;}
 .badge-orange{background:rgba(249,115,22,.12);color:#ea580c;}
@@ -236,10 +250,10 @@ function statusBadge($status, $expires_at) {
 .sub-row .owner-em{font-size:12px;color:var(--muted);}
 .sub-row .sub-meta{font-size:12px;color:var(--muted);}
 .stat-mini{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:16px 20px;text-align:center;}
-.stat-mini .num{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;}
+.stat-mini .num{font-family:var(--font-ui);font-weight:650;font-size:24px;}
 .stat-mini .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
-.pending-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(234,88,12,.1);border:1px solid rgba(234,88,12,.22);color:#ea580c;padding:4px 9px;border-radius:99px;font-size:11.5px;font-weight:700;}
-.collected-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.22);color:#059669;padding:4px 9px;border-radius:99px;font-size:11.5px;font-weight:700;}
+.pending-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(234,88,12,.1);border:1px solid rgba(234,88,12,.22);color:#ea580c;padding:4px 9px;border-radius:4px;font-size:11.5px;font-weight:700;}
+.collected-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.22);color:#059669;padding:4px 9px;border-radius:4px;font-size:11.5px;font-weight:700;}
 @media(max-width:900px){.sub-row{grid-template-columns:1fr;}}
 </style>
 
@@ -277,21 +291,22 @@ function statusBadge($status, $expires_at) {
 <div class="card-glass animate-in" style="margin-bottom:24px;border-color:rgba(200,169,126,.2);">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
         <div>
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;">
+            <div style="font-family:var(--font-ui);font-weight:650;font-size:17px;display:flex;align-items:center;gap:8px;">
                 <i class="bi bi-cash-coin" style="color:#ca8a04;"></i> Commission — Current Period
             </div>
             <div style="font-size:12px;color:var(--muted);margin-top:3px;">Tracked per subscription period. Resets correctly on renewal. <a href="commission_logs.php" style="color:var(--accent);">Full history &rarr;</a></div>
         </div>
     </div>
+    <div class="table-scroll" role="region" tabindex="0" aria-label="subscriptions table">
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead><tr style="background:var(--card-border);">
-            <th style="padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Shop</th>
-            <th style="padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Plan &amp; Period</th>
-            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Rate</th>
-            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Revenue</th>
-            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Pending</th>
-            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Collected</th>
-            <th style="padding:9px 14px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Action</th>
+            <th style="padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);">Shop</th>
+            <th style="padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);">Plan &amp; Period</th>
+            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);">Rate</th>
+            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);">Revenue</th>
+            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);">Pending</th>
+            <th style="padding:9px 14px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);">Collected</th>
+            <th style="padding:9px 14px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);">Action</th>
         </tr></thead>
         <tbody>
         <?php foreach ($commission_data as $i => $cd): ?>
@@ -323,12 +338,13 @@ function statusBadge($status, $expires_at) {
         <?php endforeach; ?>
         <tr style="border-top:2px solid var(--card-border);background:rgba(200,169,126,.05);">
             <td colspan="4" style="padding:11px 14px;font-weight:700;text-align:right;">Total</td>
-            <td style="padding:11px 14px;text-align:right;font-family:'Syne',sans-serif;font-weight:800;color:#ea580c;">&#8377;<?= number_format($total_pending_commission,2) ?></td>
-            <td style="padding:11px 14px;text-align:right;font-family:'Syne',sans-serif;font-weight:800;color:#059669;">&#8377;<?= number_format($total_collected_commission,2) ?></td>
+            <td style="padding:11px 14px;text-align:right;font-family:var(--font-ui);font-weight:650;color:#ea580c;">&#8377;<?= number_format($total_pending_commission,2) ?></td>
+            <td style="padding:11px 14px;text-align:right;font-family:var(--font-ui);font-weight:650;color:#059669;">&#8377;<?= number_format($total_collected_commission,2) ?></td>
             <td></td>
         </tr>
         </tbody>
     </table>
+    </div>
 </div>
 <?php endif; ?>
 
@@ -412,12 +428,14 @@ function statusBadge($status, $expires_at) {
         <?php endif; ?>
         <?php if (!$is_suspended): ?>
         <form method="POST" onsubmit="return confirm('Suspend this shop?')">
+                <?= saAuditCsrfField() ?>
             <input type="hidden" name="action" value="suspend">
             <input type="hidden" name="shop_id" value="<?= $sub['shop_id'] ?>">
             <button class="btn-danger-custom" style="width:100%;padding:5px 12px;font-size:12px;"><i class="bi bi-pause-circle"></i> Suspend</button>
         </form>
         <?php else: ?>
         <form method="POST">
+                <?= saAuditCsrfField() ?>
             <input type="hidden" name="action" value="restore">
             <input type="hidden" name="shop_id" value="<?= $sub['shop_id'] ?>">
             <button class="btn-ghost-custom" style="width:100%;padding:5px 12px;font-size:12px;color:#059669;"><i class="bi bi-play-circle"></i> Restore</button>
@@ -431,7 +449,8 @@ function statusBadge($status, $expires_at) {
 <!-- ACTIVATE MODAL -->
 <div id="activateModal" class="modal-overlay" style="display:none;"><div class="modal-box" style="max-width:500px;">
     <div class="modal-header"><div class="modal-title"><i class="bi bi-arrow-up-circle"></i> Assign / Activate Plan</div><button onclick="closeModal('activateModal')" class="modal-close"><i class="bi bi-x-lg"></i></button></div>
-    <form method="POST"><input type="hidden" name="action" value="activate">
+    <form method="POST">
+                <?= saAuditCsrfField() ?><input type="hidden" name="action" value="activate">
     <div class="modal-body" style="display:grid;gap:14px;">
         <div><label class="input-label">Shop *</label>
         <select name="shop_id" id="activateShopId" class="input-custom" required>
@@ -455,7 +474,8 @@ function statusBadge($status, $expires_at) {
 <!-- EXTEND MODAL -->
 <div id="extendModal" class="modal-overlay" style="display:none;"><div class="modal-box" style="max-width:400px;">
     <div class="modal-header"><div class="modal-title" id="extendTitle"><i class="bi bi-calendar-plus"></i> Extend Subscription</div><button onclick="closeModal('extendModal')" class="modal-close"><i class="bi bi-x-lg"></i></button></div>
-    <form method="POST"><input type="hidden" name="action" value="extend"><input type="hidden" name="sub_id" id="extendSubId">
+    <form method="POST">
+                <?= saAuditCsrfField() ?><input type="hidden" name="action" value="extend"><input type="hidden" name="sub_id" id="extendSubId">
     <div class="modal-body"><div><label class="input-label">Extend by (days)</label><input type="number" name="extend_days" class="input-custom" value="30" min="1" max="365"></div></div>
     <div class="modal-footer"><button type="submit" class="btn-primary-custom"><i class="bi bi-check-lg"></i> Extend</button><button type="button" onclick="closeModal('extendModal')" class="btn-ghost-custom">Cancel</button></div>
     </form>
@@ -464,15 +484,16 @@ function statusBadge($status, $expires_at) {
 <!-- COLLECT COMMISSION MODAL -->
 <div id="collectModal" class="modal-overlay" style="display:none;"><div class="modal-box" style="max-width:440px;">
     <div class="modal-header"><div class="modal-title"><i class="bi bi-check2-all" style="color:#059669;"></i> Collect Commission</div><button onclick="closeModal('collectModal')" class="modal-close"><i class="bi bi-x-lg"></i></button></div>
-    <form method="POST"><input type="hidden" name="action" value="collect_commission"><input type="hidden" name="shop_id" id="collectShopId"><input type="hidden" name="sub_id" id="collectSubId">
+    <form method="POST">
+                <?= saAuditCsrfField() ?><input type="hidden" name="action" value="collect_commission"><input type="hidden" name="shop_id" id="collectShopId"><input type="hidden" name="sub_id" id="collectSubId">
     <div class="modal-body" style="display:grid;gap:16px;">
-        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:18px;text-align:center;">
+        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:4px;padding:18px;text-align:center;">
             <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="collectShopName">Shop</div>
-            <div style="font-size:32px;font-family:'Syne',sans-serif;font-weight:900;color:#059669;" id="collectAmount">&#8377;0.00</div>
+            <div style="font-size:32px;font-family:var(--font-ui);font-weight:650;color:#059669;" id="collectAmount">&#8377;0.00</div>
             <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="collectOrders">from 0 orders</div>
         </div>
         <div><label class="input-label">Collection Note (optional)</label><input type="text" name="note" class="input-custom" placeholder="e.g. Collected via GPay on 21 Aug 2026"></div>
-        <div style="font-size:12px;color:var(--muted);background:var(--card-border);border-radius:10px;padding:12px;"><i class="bi bi-info-circle"></i> This marks all pending commission orders as collected and stores the settlement in the commission log for full traceability.</div>
+        <div style="font-size:12px;color:var(--muted);background:var(--card-border);border-radius:4px;padding:12px;"><i class="bi bi-info-circle"></i> This marks all pending commission orders as collected and stores the settlement in the commission log for full traceability.</div>
     </div>
     <div class="modal-footer"><button type="submit" class="btn-primary-custom" style="background:#059669;"><i class="bi bi-check2-all"></i> Confirm & Log Collection</button><button type="button" onclick="closeModal('collectModal')" class="btn-ghost-custom">Cancel</button></div>
     </form>

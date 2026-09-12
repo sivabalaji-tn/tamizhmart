@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__ . '/includes/audit.php';
+saAuditRequireAdmin();
 // ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Platform Settings';
 $page_subtitle = 'Control global platform behaviour';
@@ -8,41 +10,51 @@ $page_subtitle = 'Control global platform behaviour';
 $success = $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    try {
+        $audit_context = saAuditStart($conn, 'settings', $_POST);
+        $action = $_POST['action'] ?? '';
 
-    if ($action === 'save_settings') {
-        $settings = [
-            'site_name'           => trim($_POST['site_name'] ?? 'TamizhMart'),
-            'site_city'           => trim($_POST['site_city'] ?? 'Your City'),
-            'contact_email'       => trim($_POST['contact_email'] ?? ''),
-            'maintenance_mode'    => isset($_POST['maintenance_mode']) ? '1' : '0',
-            'maintenance_message' => trim($_POST['maintenance_message'] ?? ''),
-            'registration_open'   => isset($_POST['registration_open']) ? '1' : '0',
-        ];
-        foreach ($settings as $key => $val) {
-            $k = mysqli_real_escape_string($conn, $key);
-            $v = mysqli_real_escape_string($conn, $val);
-            $conn->query("INSERT INTO platform_settings (setting_key, setting_value) VALUES ('$k','$v') ON DUPLICATE KEY UPDATE setting_value='$v'");
+        if ($action === 'save_settings') {
+            $settings = [
+                'site_name'           => trim($_POST['site_name'] ?? 'TamizhMart'),
+                'site_city'           => trim($_POST['site_city'] ?? 'Your City'),
+                'contact_email'       => trim($_POST['contact_email'] ?? ''),
+                'maintenance_mode'    => isset($_POST['maintenance_mode']) ? '1' : '0',
+                'maintenance_message' => trim($_POST['maintenance_message'] ?? ''),
+                'registration_open'   => isset($_POST['registration_open']) ? '1' : '0',
+            ];
+            foreach ($settings as $key => $val) {
+                $k = mysqli_real_escape_string($conn, $key);
+                $v = mysqli_real_escape_string($conn, $val);
+                $conn->query("INSERT INTO platform_settings (setting_key, setting_value) VALUES ('$k','$v') ON DUPLICATE KEY UPDATE setting_value='$v'");
+            }
+            $success = "Platform settings saved.";
+
+        } elseif ($action === 'change_password') {
+            $current  = $_POST['current_password'] ?? '';
+            $new_pass = $_POST['new_password'] ?? '';
+            $confirm  = $_POST['confirm_password'] ?? '';
+
+            $admin = $conn->query("SELECT password FROM super_admins WHERE id=".(int)$_SESSION['superadmin_id'])->fetch_assoc();
+            if (!password_verify($current, $admin['password'])) {
+                $error = "Current password is incorrect.";
+            } elseif (strlen($new_pass) < 8) {
+                $error = "New password must be at least 8 characters.";
+            } elseif ($new_pass !== $confirm) {
+                $error = "Passwords do not match.";
+            } else {
+                $hash = password_hash($new_pass, PASSWORD_DEFAULT);
+                $conn->query("UPDATE super_admins SET password='$hash' WHERE id=".(int)$_SESSION['superadmin_id']);
+                $success = "Password changed successfully.";
+            }
+        } elseif ($action === 'clear_carts') {
+            $conn->query("DELETE FROM cart");
+            $success = "Cart data cleared.";
         }
-        $success = "Platform settings saved.";
-
-    } elseif ($action === 'change_password') {
-        $current  = $_POST['current_password'] ?? '';
-        $new_pass = $_POST['new_password'] ?? '';
-        $confirm  = $_POST['confirm_password'] ?? '';
-
-        $admin = $conn->query("SELECT password FROM super_admins WHERE id=".(int)$_SESSION['superadmin_id'])->fetch_assoc();
-        if (!password_verify($current, $admin['password'])) {
-            $error = "Current password is incorrect.";
-        } elseif (strlen($new_pass) < 8) {
-            $error = "New password must be at least 8 characters.";
-        } elseif ($new_pass !== $confirm) {
-            $error = "Passwords do not match.";
-        } else {
-            $hash = password_hash($new_pass, PASSWORD_DEFAULT);
-            $conn->query("UPDATE super_admins SET password='$hash' WHERE id=".(int)$_SESSION['superadmin_id']);
-            $success = "Password changed successfully.";
-        }
+        saAuditFinish($conn, $audit_context, $success ?? '', $error ?? '');
+    } catch (Throwable $exception) {
+        $success = '';
+        $error = saAuditFailure($conn, $exception);
     }
 }
 
@@ -76,6 +88,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
             <div class="section-sub" style="margin-bottom:22px;">Basic platform configuration</div>
 
             <form method="POST">
+                <?= saAuditCsrfField() ?>
                 <input type="hidden" name="action" value="save_settings">
                 <div style="display:grid;gap:16px;">
                     <div>
@@ -83,7 +96,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                         <input type="text" name="site_name" class="input-custom"
                             value="<?= htmlspecialchars($settings_map['site_name'] ?? 'TamizhMart') ?>" required>
                     </div>
-                    <div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.2);border-radius:var(--radius-sm);padding:16px;">
+                    <div class="form-section" style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.2);border-radius:var(--radius-sm);padding:16px;">
                         <div class="form-label-custom" style="display:flex;align-items:center;gap:7px;">
                             <i class="bi bi-geo-alt-fill" style="color:var(--info);"></i>
                             Application City
@@ -101,7 +114,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                     </div>
 
                     <!-- Maintenance Mode -->
-                    <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:var(--radius-sm);padding:16px;">
+                    <div class="form-section" style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:var(--radius-sm);padding:16px;">
                         <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:12px;">
                             <input type="checkbox" name="maintenance_mode" value="1"
                                 <?= ($settings_map['maintenance_mode'] ?? '0') === '1' ? 'checked' : '' ?>
@@ -117,14 +130,13 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                         </label>
                         <div>
                             <div class="form-label-custom">Maintenance Message</div>
-                            <input type="text" name="maintenance_message" class="input-custom"
-                                value="<?= htmlspecialchars($settings_map['maintenance_message'] ?? 'We are under maintenance. Back soon!') ?>"
-                                placeholder="Message shown to customers...">
+                            <textarea name="maintenance_message" class="input-custom" rows="3"
+                                placeholder="Message shown to customers..."><?= htmlspecialchars($settings_map['maintenance_message'] ?? 'We are under maintenance. Back soon!') ?></textarea>
                         </div>
                     </div>
 
                     <!-- Registration -->
-                    <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
+                    <label class="form-section" style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
                         <input type="checkbox" name="registration_open" value="1"
                             <?= ($settings_map['registration_open'] ?? '1') === '1' ? 'checked' : '' ?>
                             style="width:18px;height:18px;accent-color:var(--accent);">
@@ -149,6 +161,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
             <div class="section-sub" style="margin-bottom:22px;">Keep your control panel secure</div>
 
             <form method="POST">
+                <?= saAuditCsrfField() ?>
                 <input type="hidden" name="action" value="change_password">
                 <div style="display:grid;gap:14px;">
                     <div>
@@ -186,12 +199,12 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                 ];
                 foreach ($info_rows as $row):
                 ?>
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid var(--card-border);">
+                <div class="settings-summary-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:4px;border:1px solid var(--card-border);">
                     <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);">
                         <i class="bi bi-<?= $row['icon'] ?>" style="color:<?= $row['color'] ?>;font-size:16px;"></i>
                         <?= $row['label'] ?>
                     </div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:<?= $row['color'] ?>;"><?= $row['val'] ?></div>
+                    <div style="font-family:var(--font-ui);font-weight:650;font-size:16px;color:<?= $row['color'] ?>;"><?= $row['val'] ?></div>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -201,7 +214,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
         <div class="card-glass animate-in d2" style="margin-bottom:16px;">
             <div class="section-title" style="margin-bottom:16px;"><i class="bi bi-activity" style="color:var(--accent);margin-right:8px;"></i>Current Status</div>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid var(--card-border);">
+                <div class="settings-summary-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:4px;border:1px solid var(--card-border);">
                     <span style="font-size:13.5px;color:var(--muted);">Maintenance Mode</span>
                     <?php if (($settings_map['maintenance_mode'] ?? '0') === '1'): ?>
                     <span class="badge-custom badge-warning"><i class="bi bi-cone-striped"></i> ON</span>
@@ -209,7 +222,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                     <span class="badge-custom badge-success"><i class="bi bi-check-circle"></i> OFF</span>
                     <?php endif; ?>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid var(--card-border);">
+                <div class="settings-summary-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:4px;border:1px solid var(--card-border);">
                     <span style="font-size:13.5px;color:var(--muted);">New Registrations</span>
                     <?php if (($settings_map['registration_open'] ?? '1') === '1'): ?>
                     <span class="badge-custom badge-success"><i class="bi bi-door-open"></i> Open</span>
@@ -217,7 +230,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                     <span class="badge-custom badge-danger"><i class="bi bi-door-closed"></i> Closed</span>
                     <?php endif; ?>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid var(--card-border);">
+                <div class="settings-summary-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:4px;border:1px solid var(--card-border);">
                     <span style="font-size:13.5px;color:var(--muted);">Admin Account</span>
                     <span style="font-size:13px;font-weight:600;color:var(--accent2);"><?= htmlspecialchars($_SESSION['superadmin_email']) ?></span>
                 </div>
@@ -233,6 +246,7 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
                     <div style="font-weight:600;font-size:13.5px;margin-bottom:4px;">Clear All Cart Data</div>
                     <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Remove all abandoned cart items across the platform</div>
                     <form method="POST" onsubmit="return confirm('Clear all cart data? This cannot be undone.')">
+                <?= saAuditCsrfField() ?>
                         <input type="hidden" name="action" value="clear_carts">
                         <button type="submit" class="btn-danger-custom" style="font-size:13px;">
                             <i class="bi bi-trash3"></i> Clear All Carts
@@ -245,9 +259,5 @@ $db_size       = $conn->query("SELECT ROUND(SUM(data_length+index_length)/1024/1
 </div>
 
 <?php
-// Handle danger zone actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'clear_carts') {
-    $conn->query("DELETE FROM cart");
-}
 require __DIR__ . '/includes/footer.php';
 ?>

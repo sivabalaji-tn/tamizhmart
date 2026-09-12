@@ -1,6 +1,8 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__ . '/includes/audit.php';
+saAuditRequireAdmin();
 
 if (!isset($_SESSION['superadmin_id'])) {
     header("Location: login.php");
@@ -82,33 +84,40 @@ ensureSuperadminCampaignTables($conn);
 $month_key = preg_match('/^\d{4}-\d{2}$/', $_GET['month'] ?? '') ? $_GET['month'] : date('Y-m');
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    $action = $_POST['action'] ?? '';
-    $shop_id = (int)($_POST['shop_id'] ?? 0);
-    $post_month = preg_match('/^\d{4}-\d{2}$/', $_POST['month_key'] ?? '') ? $_POST['month_key'] : date('Y-m');
+    try {
+        $audit_context = saAuditStart($conn, 'campaigns', $_POST);
+        $action = $_POST['action'] ?? '';
+        $shop_id = (int)($_POST['shop_id'] ?? 0);
+        $post_month = preg_match('/^\d{4}-\d{2}$/', $_POST['month_key'] ?? '') ? $_POST['month_key'] : date('Y-m');
 
-    if ($shop_id > 0) {
-        ensureShopAllowance($conn, $shop_id, $post_month);
+        if ($shop_id > 0) {
+            ensureShopAllowance($conn, $shop_id, $post_month);
 
-        if ($action === 'reset_usage') {
-            $admin_id = (int)$_SESSION['superadmin_id'];
-            $st = $conn->prepare("UPDATE email_campaign_allowances
-                                  SET used_count=0, reset_count=reset_count+1, reset_by=?, reset_at=NOW()
-                                  WHERE shop_id=? AND month_key=?");
-            $st->bind_param('iis', $admin_id, $shop_id, $post_month);
-            $st->execute();
-            $success = 'Campaign usage reset for the selected shop.';
-        } elseif ($action === 'update_limit') {
-            $limit = max(0, min(50, (int)($_POST['monthly_limit'] ?? 2)));
-            $st = $conn->prepare("UPDATE email_campaign_allowances SET monthly_limit=? WHERE shop_id=? AND month_key=?");
-            $st->bind_param('iis', $limit, $shop_id, $post_month);
-            $st->execute();
-            $success = "Monthly campaign limit updated to {$limit}.";
+            if ($action === 'reset_usage') {
+                $admin_id = (int)$_SESSION['superadmin_id'];
+                $st = $conn->prepare("UPDATE email_campaign_allowances
+                                      SET used_count=0, reset_count=reset_count+1, reset_by=?, reset_at=NOW()
+                                      WHERE shop_id=? AND month_key=?");
+                $st->bind_param('iis', $admin_id, $shop_id, $post_month);
+                $st->execute();
+                $success = 'Campaign usage reset for the selected shop.';
+            } elseif ($action === 'update_limit') {
+                $limit = max(0, min(50, (int)($_POST['monthly_limit'] ?? 2)));
+                $st = $conn->prepare("UPDATE email_campaign_allowances SET monthly_limit=? WHERE shop_id=? AND month_key=?");
+                $st->bind_param('iis', $limit, $shop_id, $post_month);
+                $st->execute();
+                $success = "Monthly campaign limit updated to {$limit}.";
+            }
+        } else {
+            $error = 'Invalid shop selected.';
         }
-    } else {
-        $error = 'Invalid shop selected.';
-    }
 
-    $month_key = $post_month;
+        $month_key = $post_month;
+        saAuditFinish($conn, $audit_context, $success ?? '', $error ?? '');
+    } catch (Throwable $exception) {
+        $success = '';
+        $error = saAuditFailure($conn, $exception);
+    }
 }
 
 require __DIR__ . '/includes/sidebar.php';
@@ -155,10 +164,10 @@ $shops = $conn->query("
 <style>
 .campaign-admin-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px;}
 .campaign-admin-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:18px 20px;box-shadow:0 4px 20px rgba(0,0,0,.15);}
-.campaign-admin-card .lbl{font-size:10.5px;color:var(--muted2);font-weight:800;text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
-.campaign-admin-card .num{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1;}
-.usage-meter{height:8px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-top:8px;width:130px;}
-.usage-meter span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--cyan-neon));border-radius:99px;}
+.campaign-admin-card .lbl{font-size:10.5px;color:var(--muted2);font-weight:650;text-transform:uppercase;letter-spacing:0;font-family:var(--font-ui);margin-bottom:8px;}
+.campaign-admin-card .num{font-family:var(--font-ui);font-size:26px;font-weight:650;color:var(--text);line-height:1;}
+.usage-meter{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-top:8px;width:130px;}
+.usage-meter span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--cyan-neon));border-radius:4px;}
 .mini-form{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .mini-form .input-custom{width:78px;padding:6px 9px;font-size:12px;}
 @media(max-width:900px){.campaign-admin-stats{grid-template-columns:repeat(2,1fr)}}
@@ -193,6 +202,7 @@ $shops = $conn->query("
 </div>
 
 <div class="card-glass animate-in d2" style="padding:0;overflow:hidden;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="campaigns table">
     <table class="table-custom">
         <thead>
             <tr>
@@ -216,20 +226,20 @@ $shops = $conn->query("
         ?>
             <tr>
                 <td>
-                    <div style="font-weight:700;color:#fff;font-size:13.5px;"><?= htmlspecialchars($s['name']) ?></div>
+                    <div style="font-weight:700;color:var(--text);font-size:13.5px;"><?= htmlspecialchars($s['name']) ?></div>
                     <div style="font-size:12px;color:var(--muted);">/?shop=<?= htmlspecialchars($s['slug']) ?></div>
                 </td>
                 <td>
-                    <div style="font-size:13px;color:#e2e8f0;"><?= htmlspecialchars($s['owner_name']) ?></div>
+                    <div style="font-size:13px;color:var(--text);"><?= htmlspecialchars($s['owner_name']) ?></div>
                     <div style="font-size:12px;color:var(--muted);"><?= htmlspecialchars($s['owner_email']) ?></div>
                 </td>
                 <td>
-                    <div style="font-size:13px;font-weight:800;color:#fff;"><?= $used ?>/<?= $limit ?> used</div>
+                    <div style="font-size:13px;font-weight:650;color:var(--text);"><?= $used ?>/<?= $limit ?> used</div>
                     <div class="usage-meter"><span style="width:<?= $pct ?>%;"></span></div>
                     <div style="font-size:11.5px;color:var(--muted);margin-top:5px;"><?= $remaining ?> remaining · <?= (int)$s['reset_count'] ?> resets</div>
                 </td>
                 <td>
-                    <div style="font-size:12.5px;color:var(--success);font-weight:800;"><?= (int)$s['sent_count'] ?> sent</div>
+                    <div style="font-size:12.5px;color:var(--success);font-weight:650;"><?= (int)$s['sent_count'] ?> sent</div>
                     <div style="font-size:12px;color:var(--danger);"><?= (int)$s['failed_count'] ?> failed</div>
                     <div style="font-size:11.5px;color:var(--muted);"><?= (int)$s['campaign_count'] ?> campaigns</div>
                 </td>
@@ -248,6 +258,7 @@ $shops = $conn->query("
                 <td>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <form method="POST" class="mini-form">
+                <?= saAuditCsrfField() ?>
                             <input type="hidden" name="action" value="reset_usage">
                             <input type="hidden" name="shop_id" value="<?= (int)$s['id'] ?>">
                             <input type="hidden" name="month_key" value="<?= htmlspecialchars($month_key) ?>">
@@ -256,6 +267,7 @@ $shops = $conn->query("
                             </button>
                         </form>
                         <form method="POST" class="mini-form">
+                <?= saAuditCsrfField() ?>
                             <input type="hidden" name="action" value="update_limit">
                             <input type="hidden" name="shop_id" value="<?= (int)$s['id'] ?>">
                             <input type="hidden" name="month_key" value="<?= htmlspecialchars($month_key) ?>">
@@ -268,6 +280,7 @@ $shops = $conn->query("
         <?php endwhile; endif; ?>
         </tbody>
     </table>
+    </div>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

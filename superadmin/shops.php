@@ -1,24 +1,33 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__ . '/includes/audit.php';
+saAuditRequireAdmin();
 // ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'All Shops';
 $page_subtitle = 'Manage every shop on the platform';
 
 // Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action  = $_POST['action'] ?? '';
-    $shop_id = (int)($_POST['shop_id'] ?? 0);
+    try {
+        $audit_context = saAuditStart($conn, 'shops', $_POST);
+        $action  = $_POST['action'] ?? '';
+        $shop_id = (int)($_POST['shop_id'] ?? 0);
 
-    if ($action === 'suspend') {
-        $conn->query("UPDATE shops SET is_suspended=1, is_active=0 WHERE id=$shop_id");
-        $success = "Shop suspended.";
-    } elseif ($action === 'activate') {
-        $conn->query("UPDATE shops SET is_suspended=0, is_active=1 WHERE id=$shop_id");
-        $success = "Shop reactivated.";
-    } elseif ($action === 'delete') {
-        $conn->query("DELETE FROM shops WHERE id=$shop_id");
-        $success = "Shop deleted permanently.";
+        if ($action === 'suspend') {
+            $conn->query("UPDATE shops SET is_suspended=1, is_active=0 WHERE id=$shop_id");
+            $success = "Shop suspended.";
+        } elseif ($action === 'activate') {
+            $conn->query("UPDATE shops SET is_suspended=0, is_active=1 WHERE id=$shop_id");
+            $success = "Shop reactivated.";
+        } elseif ($action === 'delete') {
+            $conn->query("DELETE FROM shops WHERE id=$shop_id");
+            $success = "Shop deleted permanently.";
+        }
+        saAuditFinish($conn, $audit_context, $success ?? '', $error ?? '');
+    } catch (Throwable $exception) {
+        $success = '';
+        $error = saAuditFailure($conn, $exception);
     }
 }
 
@@ -51,7 +60,11 @@ $shops = $conn->query("
 ");
 ?>
 
-<?php if (isset($success)): ?>
+<?php if (!empty($error)): ?>
+<div class="alert-error" role="alert"><i class="bi bi-exclamation-circle"></i><?= htmlspecialchars($error) ?></div>
+<?php endif; ?>
+
+<?php if (!empty($success)): ?>
 <div class="alert-flash alert-flash-success animate-in"><i class="bi bi-check-circle-fill"></i><?= htmlspecialchars($success) ?></div>
 <?php endif; ?>
 
@@ -80,6 +93,7 @@ $shops = $conn->query("
 
 <!-- Shops Table -->
 <div class="card-glass animate-in d1" style="padding:0;overflow:hidden;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="shops table">
     <table class="table-custom">
         <thead>
             <tr>
@@ -100,7 +114,7 @@ $shops = $conn->query("
         <tr>
             <td>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:38px;height:38px;border-radius:10px;overflow:hidden;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <div style="width:38px;height:38px;border-radius:4px;overflow:hidden;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                         <?php if ($s['logo']): ?>
                         <img src="../assets/uploads/logos/<?= htmlspecialchars($s['logo']) ?>" style="width:100%;height:100%;object-fit:cover;">
                         <?php else: ?>
@@ -125,7 +139,7 @@ $shops = $conn->query("
                 </div>
             </td>
             <td>
-                <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--success);">
+                <div style="font-family:var(--font-ui);font-weight:700;color:var(--success);">
                     ₹<?= number_format($s['total_revenue'], 0) ?>
                 </div>
             </td>
@@ -147,6 +161,7 @@ $shops = $conn->query("
                     </a>
                     <?php if ($s['is_suspended'] ?? 0): ?>
                     <form method="POST" style="display:inline;">
+                <?= saAuditCsrfField() ?>
                         <input type="hidden" name="shop_id" value="<?= $s['id'] ?>">
                         <input type="hidden" name="action" value="activate">
                         <button type="submit" class="btn-success-custom" style="padding:5px 10px;font-size:12px;" title="Reactivate">
@@ -155,6 +170,7 @@ $shops = $conn->query("
                     </form>
                     <?php else: ?>
                     <form method="POST" style="display:inline;">
+                <?= saAuditCsrfField() ?>
                         <input type="hidden" name="shop_id" value="<?= $s['id'] ?>">
                         <input type="hidden" name="action" value="suspend">
                         <button type="submit" class="btn-danger-custom" style="padding:5px 10px;font-size:12px;"
@@ -164,6 +180,7 @@ $shops = $conn->query("
                     </form>
                     <?php endif; ?>
                     <form method="POST" style="display:inline;">
+                <?= saAuditCsrfField() ?>
                         <input type="hidden" name="shop_id" value="<?= $s['id'] ?>">
                         <input type="hidden" name="action" value="delete">
                         <button type="submit" class="btn-danger-custom" style="padding:5px 10px;font-size:12px;"
@@ -177,6 +194,7 @@ $shops = $conn->query("
         <?php endwhile; ?>
         </tbody>
     </table>
+    </div>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

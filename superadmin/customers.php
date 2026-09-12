@@ -52,6 +52,7 @@ $all_shops = $conn->query("SELECT id, name FROM shops ORDER BY name ASC");
 
 <!-- Customers Table -->
 <div class="card-glass animate-in d1" style="padding:0;overflow:hidden;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="customers table">
     <table class="table-custom">
         <thead>
             <tr>
@@ -72,7 +73,7 @@ $all_shops = $conn->query("SELECT id, name FROM shops ORDER BY name ASC");
         <tr>
             <td>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;border-radius:10px;background:var(--info-dim);color:var(--info);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;flex-shrink:0;">
+                    <div style="width:36px;height:36px;border-radius:4px;background:var(--info-dim);color:var(--info);display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-weight:650;font-size:14px;flex-shrink:0;">
                         <?= strtoupper(substr($c['name'],0,1)) ?>
                     </div>
                     <div>
@@ -91,10 +92,10 @@ $all_shops = $conn->query("SELECT id, name FROM shops ORDER BY name ASC");
                 </a>
             </td>
             <td>
-                <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;"><?= $c['order_count'] ?></span>
+                <span style="font-family:var(--font-ui);font-weight:700;font-size:15px;"><?= $c['order_count'] ?></span>
             </td>
             <td>
-                <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--success);">
+                <span style="font-family:var(--font-ui);font-weight:700;color:var(--success);">
                     ₹<?= number_format($c['total_spent'], 0) ?>
                 </span>
             </td>
@@ -113,6 +114,7 @@ $all_shops = $conn->query("SELECT id, name FROM shops ORDER BY name ASC");
         <?php endwhile; ?>
         </tbody>
     </table>
+    </div>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

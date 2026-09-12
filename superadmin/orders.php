@@ -75,14 +75,14 @@ $filtered_revenue = $rev_query->fetch_row()[0];
     <div class="card-glass" style="padding:14px 20px;display:flex;align-items:center;gap:12px;">
         <i class="bi bi-bag-fill" style="color:var(--accent);font-size:20px;"></i>
         <div>
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;"><?= $orders->num_rows ?></div>
+            <div style="font-family:var(--font-ui);font-weight:650;font-size:20px;"><?= $orders->num_rows ?></div>
             <div style="font-size:12px;color:var(--muted);">Orders shown</div>
         </div>
     </div>
     <div class="card-glass" style="padding:14px 20px;display:flex;align-items:center;gap:12px;">
         <i class="bi bi-currency-rupee" style="color:var(--success);font-size:20px;"></i>
         <div>
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--success);">₹<?= number_format($filtered_revenue, 0) ?></div>
+            <div style="font-family:var(--font-ui);font-weight:650;font-size:20px;color:var(--success);">₹<?= number_format($filtered_revenue, 0) ?></div>
             <div style="font-size:12px;color:var(--muted);">Total revenue</div>
         </div>
     </div>
@@ -90,6 +90,7 @@ $filtered_revenue = $rev_query->fetch_row()[0];
 
 <!-- Orders Table -->
 <div class="card-glass animate-in d2" style="padding:0;overflow:hidden;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="orders table">
     <table class="table-custom">
         <thead>
             <tr>
@@ -109,7 +110,7 @@ $filtered_revenue = $rev_query->fetch_row()[0];
         <?php $orders->data_seek(0); while ($o = $orders->fetch_assoc()): ?>
         <tr>
             <td>
-                <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2);">#<?= str_pad($o['shop_order_number'] ?? $o['id'], 4, '0', STR_PAD_LEFT) ?></span>
+                <span style="font-family:var(--font-ui);font-weight:700;color:var(--accent2);">#<?= str_pad($o['shop_order_number'] ?? $o['id'], 4, '0', STR_PAD_LEFT) ?></span>
             </td>
             <td>
                 <div style="font-weight:600;font-size:13.5px;"><?= htmlspecialchars($o['customer_name']) ?></div>
@@ -123,7 +124,7 @@ $filtered_revenue = $rev_query->fetch_row()[0];
             </td>
             <td style="font-size:13px;"><?= $o['item_count'] ?> item<?= $o['item_count'] != 1 ? 's' : '' ?></td>
             <td>
-                <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--success);">
+                <span style="font-family:var(--font-ui);font-weight:700;color:var(--success);">
                     ₹<?= number_format($o['total_amount'], 2) ?>
                 </span>
             </td>
@@ -140,6 +141,7 @@ $filtered_revenue = $rev_query->fetch_row()[0];
         <?php endwhile; ?>
         </tbody>
     </table>
+    </div>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

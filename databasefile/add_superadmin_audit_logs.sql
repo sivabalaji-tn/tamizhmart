@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS superadmin_audit_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    occurred_at DATETIME(6) NOT NULL,
+    admin_id INT UNSIGNED NOT NULL,
+    admin_name VARCHAR(190) NOT NULL,
+    admin_email VARCHAR(190) NOT NULL,
+    action VARCHAR(64) NOT NULL,
+    entity_type VARCHAR(32) NOT NULL,
+    entity_id INT UNSIGNED NULL,
+    entity_label VARCHAR(255) NOT NULL,
+    shop_id INT UNSIGNED NULL,
+    shop_name VARCHAR(190) NULL,
+    summary VARCHAR(500) NOT NULL,
+    before_data LONGTEXT NOT NULL,
+    after_data LONGTEXT NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    source_page VARCHAR(64) NOT NULL,
+    INDEX idx_audit_time (occurred_at, id),
+    INDEX idx_audit_admin (admin_id, occurred_at),
+    INDEX idx_audit_action (action, occurred_at),
+    INDEX idx_audit_shop (shop_id, occurred_at),
+    INDEX idx_audit_entity (entity_type, entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

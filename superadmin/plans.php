@@ -4,63 +4,73 @@
  * Create, edit, delete subscription plans
  */
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__ . '/includes/audit.php';
+saAuditRequireAdmin();
 if (empty($_SESSION['superadmin_id'])) { header('Location: login.php'); exit; }
 
 $success = ''; $error = '';
 
 // ── POST handlers ─────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    try {
+        $audit_context = saAuditStart($conn, 'plans', $_POST);
+        $action = $_POST['action'] ?? '';
 
-    if ($action === 'create' || $action === 'edit') {
-        $id               = intval($_POST['id'] ?? 0);
-        $name             = trim($_POST['name'] ?? '');
-        $slug             = strtolower(preg_replace('/[^a-z0-9]+/', '-', trim($_POST['slug'] ?? '')));
-        $price            = floatval($_POST['price'] ?? 0);
-        $duration         = intval($_POST['duration_days'] ?? 30);
-        $product_limit    = $_POST['product_limit'] === '' ? null : intval($_POST['product_limit']);
-        $order_limit      = $_POST['order_limit']   === '' ? null : intval($_POST['order_limit']);
-        $commission       = floatval($_POST['commission_rate'] ?? 0);
-        $is_active        = isset($_POST['is_active']) ? 1 : 0;
-        $sort_order       = intval($_POST['sort_order'] ?? 0);
-        $features_raw     = array_filter(array_map('trim', explode("\n", $_POST['features'] ?? '')));
-        $features_json    = json_encode(array_values($features_raw));
+        if ($action === 'create' || $action === 'edit') {
+            $id               = intval($_POST['id'] ?? 0);
+            $name             = trim($_POST['name'] ?? '');
+            $slug             = strtolower(preg_replace('/[^a-z0-9]+/', '-', trim($_POST['slug'] ?? '')));
+            $price            = floatval($_POST['price'] ?? 0);
+            $duration         = intval($_POST['duration_days'] ?? 30);
+            $product_limit    = ($_POST['product_limit'] ?? '') === '' ? null : intval($_POST['product_limit']);
+            $order_limit      = ($_POST['order_limit'] ?? '') === '' ? null : intval($_POST['order_limit']);
+            $commission       = floatval($_POST['commission_rate'] ?? 0);
+            $is_active        = isset($_POST['is_active']) ? 1 : 0;
+            $sort_order       = intval($_POST['sort_order'] ?? 0);
+            $features_raw     = array_filter(array_map('trim', explode("\n", $_POST['features'] ?? '')));
+            $features_json    = json_encode(array_values($features_raw));
 
-        if (!$name || !$slug) {
-            $error = 'Name and slug are required.';
-        } else {
-            if ($action === 'create') {
-                $st = $conn->prepare("INSERT INTO plans (name,slug,price,duration_days,product_limit,order_limit,commission_rate,features,is_active,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)");
-                $st->bind_param('ssdiiidsii', $name,$slug,$price,$duration,$product_limit,$order_limit,$commission,$features_json,$is_active,$sort_order);
-                $st->execute();
-                $success = "Plan \"$name\" created.";
+            if (!$name || !$slug) {
+                $error = 'Name and slug are required.';
             } else {
-                $st = $conn->prepare("UPDATE plans SET name=?,slug=?,price=?,duration_days=?,product_limit=?,order_limit=?,commission_rate=?,features=?,is_active=?,sort_order=? WHERE id=?");
-                $st->bind_param('ssdiiidsiii', $name,$slug,$price,$duration,$product_limit,$order_limit,$commission,$features_json,$is_active,$sort_order,$id);
-                $st->execute();
-                $success = "Plan \"$name\" updated.";
+                if ($action === 'create') {
+                    $st = $conn->prepare("INSERT INTO plans (name,slug,price,duration_days,product_limit,order_limit,commission_rate,features,is_active,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)");
+                    $st->bind_param('ssdiiidsii', $name,$slug,$price,$duration,$product_limit,$order_limit,$commission,$features_json,$is_active,$sort_order);
+                    $st->execute();
+                    $created_plan_id = (int)$conn->insert_id;
+                    $success = "Plan \"$name\" created.";
+                } else {
+                    $st = $conn->prepare("UPDATE plans SET name=?,slug=?,price=?,duration_days=?,product_limit=?,order_limit=?,commission_rate=?,features=?,is_active=?,sort_order=? WHERE id=?");
+                    $st->bind_param('ssdiiidsiii', $name,$slug,$price,$duration,$product_limit,$order_limit,$commission,$features_json,$is_active,$sort_order,$id);
+                    $st->execute();
+                    $success = "Plan \"$name\" updated.";
+                }
             }
         }
-    }
 
-    if ($action === 'toggle') {
-        $id  = intval($_POST['id']);
-        $cur = intval($_POST['current']);
-        $conn->query("UPDATE plans SET is_active=" . ($cur ? 0 : 1) . " WHERE id=$id");
-        $success = "Plan status updated.";
-    }
-
-    if ($action === 'delete') {
-        $id = intval($_POST['id']);
-        // Check no active subscriptions on this plan
-        $used = $conn->query("SELECT COUNT(*) FROM shop_subscriptions WHERE plan_id=$id AND status IN ('trial','active','grace')")->fetch_row()[0];
-        if ($used > 0) {
-            $error = "Cannot delete — $used active subscription(s) on this plan.";
-        } else {
-            $conn->query("DELETE FROM plans WHERE id=$id");
-            $success = "Plan deleted.";
+        if ($action === 'toggle') {
+            $id  = intval($_POST['id']);
+            $cur = (int)$audit_context['before']['is_active'];
+            $conn->query("UPDATE plans SET is_active=" . ($cur ? 0 : 1) . " WHERE id=$id");
+            $success = "Plan status updated.";
         }
+
+        if ($action === 'delete') {
+            $id = intval($_POST['id']);
+            // Check no active subscriptions on this plan
+            $used = $conn->query("SELECT COUNT(*) FROM shop_subscriptions WHERE plan_id=$id AND status IN ('trial','active','grace')")->fetch_row()[0];
+            if ($used > 0) {
+                $error = "Cannot delete — $used active subscription(s) on this plan.";
+            } else {
+                $conn->query("DELETE FROM plans WHERE id=$id");
+                $success = "Plan deleted.";
+            }
+        }
+        saAuditFinish($conn, $audit_context, $success ?? '', $error ?? '', $created_plan_id ?? null);
+    } catch (Throwable $exception) {
+        $success = '';
+        $error = saAuditFailure($conn, $exception);
     }
 }
 
@@ -85,7 +95,7 @@ require __DIR__ . '/includes/sidebar.php';
 .plan-card:hover { transform:translateY(-2px); }
 .plan-badge {
     display:inline-flex;align-items:center;gap:5px;
-    padding:3px 10px;border-radius:99px;
+    padding:3px 10px;border-radius:4px;
     font-size:11px;font-weight:700;
 }
 .badge-trial   { background:rgba(251,191,36,0.15);color:#d97706; }
@@ -96,13 +106,13 @@ require __DIR__ . '/includes/sidebar.php';
     display:inline-flex;align-items:center;gap:4px;
     background:rgba(var(--accent-rgb,99,102,241),0.08);
     color:var(--accent);
-    padding:2px 8px;border-radius:99px;
+    padding:2px 8px;border-radius:4px;
     font-size:11px;font-weight:500;
     margin:2px;
 }
 .plan-price {
-    font-family:'Syne',sans-serif;
-    font-weight:800;font-size:28px;
+    font-family:var(--font-ui);
+    font-weight:650;font-size:28px;
     color:var(--accent);
 }
 .plan-price span { font-size:13px;font-weight:400;color:var(--muted); }
@@ -143,11 +153,11 @@ require __DIR__ . '/includes/sidebar.php';
     };
 ?>
 <div class="plan-card">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <div class="plan-layout" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div class="plan-name" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
                 <i class="bi bi-<?= $icon ?>" style="font-size:20px;color:var(--accent);"></i>
-                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;"><?= htmlspecialchars($plan['name']) ?></div>
+                <div style="font-family:var(--font-ui);font-weight:650;font-size:18px;"><?= htmlspecialchars($plan['name']) ?></div>
                 <span class="plan-badge <?= $badge_cls ?>"><?= htmlspecialchars($plan['slug']) ?></span>
                 <?php if (!$plan['is_active']): ?>
                 <span class="plan-badge" style="background:rgba(239,68,68,0.1);color:#dc2626;">Inactive</span>
@@ -173,12 +183,13 @@ require __DIR__ . '/includes/sidebar.php';
             </div>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+        <div class="plan-actions" style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
             <button class="btn-primary-custom" style="padding:8px 16px;font-size:13px;"
                 onclick="editPlan(<?= htmlspecialchars(json_encode($plan)) ?>)">
                 <i class="bi bi-pencil"></i> Edit
             </button>
             <form method="POST">
+                <?= saAuditCsrfField() ?>
                 <input type="hidden" name="action"  value="toggle">
                 <input type="hidden" name="id"      value="<?= $plan['id'] ?>">
                 <input type="hidden" name="current" value="<?= $plan['is_active'] ?>">
@@ -189,6 +200,7 @@ require __DIR__ . '/includes/sidebar.php';
             </form>
             <?php if ($plan['active_count'] == 0): ?>
             <form method="POST" onsubmit="return confirm('Delete this plan?')">
+                <?= saAuditCsrfField() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id"     value="<?= $plan['id'] ?>">
                 <button class="btn-danger-custom" style="width:100%;padding:7px 16px;font-size:13px;">
@@ -210,6 +222,7 @@ require __DIR__ . '/includes/sidebar.php';
         <button onclick="closeModal('createModal')" class="modal-close"><i class="bi bi-x-lg"></i></button>
     </div>
     <form method="POST">
+                <?= saAuditCsrfField() ?>
     <input type="hidden" name="action" value="create">
     <div class="modal-body" style="display:grid;gap:14px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -275,6 +288,7 @@ require __DIR__ . '/includes/sidebar.php';
         <button onclick="closeModal('editModal')" class="modal-close"><i class="bi bi-x-lg"></i></button>
     </div>
     <form method="POST">
+                <?= saAuditCsrfField() ?>
     <input type="hidden" name="action" value="edit">
     <input type="hidden" name="id"     id="editId">
     <div class="modal-body" style="display:grid;gap:14px;">

@@ -1,25 +1,34 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__ . '/includes/audit.php';
+saAuditRequireAdmin();
 // ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Shop Owners';
 $page_subtitle = 'Manage all registered shop owners';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action   = $_POST['action'] ?? '';
-    $owner_id = (int)($_POST['owner_id'] ?? 0);
+    try {
+        $audit_context = saAuditStart($conn, 'owners', $_POST);
+        $action   = $_POST['action'] ?? '';
+        $owner_id = (int)($_POST['owner_id'] ?? 0);
 
-    if ($action === 'suspend') {
-        $conn->query("UPDATE owners SET is_suspended=1 WHERE id=$owner_id");
-        $conn->query("UPDATE shops SET is_suspended=1, is_active=0 WHERE owner_id=$owner_id");
-        $success = "Owner and their shop suspended.";
-    } elseif ($action === 'activate') {
-        $conn->query("UPDATE owners SET is_suspended=0 WHERE id=$owner_id");
-        $conn->query("UPDATE shops SET is_suspended=0, is_active=1 WHERE owner_id=$owner_id");
-        $success = "Owner reactivated.";
-    } elseif ($action === 'delete') {
-        $conn->query("DELETE FROM owners WHERE id=$owner_id");
-        $success = "Owner and all their data deleted.";
+        if ($action === 'suspend') {
+            $conn->query("UPDATE owners SET is_suspended=1 WHERE id=$owner_id");
+            $conn->query("UPDATE shops SET is_suspended=1, is_active=0 WHERE owner_id=$owner_id");
+            $success = "Owner and their shop suspended.";
+        } elseif ($action === 'activate') {
+            $conn->query("UPDATE owners SET is_suspended=0 WHERE id=$owner_id");
+            $conn->query("UPDATE shops SET is_suspended=0, is_active=1 WHERE owner_id=$owner_id");
+            $success = "Owner reactivated.";
+        } elseif ($action === 'delete') {
+            $conn->query("DELETE FROM owners WHERE id=$owner_id");
+            $success = "Owner and all their data deleted.";
+        }
+        saAuditFinish($conn, $audit_context, $success ?? '', $error ?? '');
+    } catch (Throwable $exception) {
+        $success = '';
+        $error = saAuditFailure($conn, $exception);
     }
 }
 
@@ -46,7 +55,11 @@ $owners = $conn->query("
 ");
 ?>
 
-<?php if (isset($success)): ?>
+<?php if (!empty($error)): ?>
+<div class="alert-error" role="alert"><i class="bi bi-exclamation-circle"></i><?= htmlspecialchars($error) ?></div>
+<?php endif; ?>
+
+<?php if (!empty($success)): ?>
 <div class="alert-flash alert-flash-success animate-in"><i class="bi bi-check-circle-fill"></i><?= htmlspecialchars($success) ?></div>
 <?php endif; ?>
 
@@ -65,6 +78,7 @@ $owners = $conn->query("
 
 <!-- Owners Table -->
 <div class="card-glass animate-in d1" style="padding:0;overflow:hidden;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="owners table">
     <table class="table-custom">
         <thead>
             <tr>
@@ -85,7 +99,7 @@ $owners = $conn->query("
         <tr>
             <td>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;flex-shrink:0;">
+                    <div style="width:38px;height:38px;border-radius:4px;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-weight:650;font-size:15px;flex-shrink:0;">
                         <?= strtoupper(substr($o['name'],0,1)) ?>
                     </div>
                     <div>
@@ -112,7 +126,7 @@ $owners = $conn->query("
                 </div>
             </td>
             <td>
-                <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--success);">
+                <div style="font-family:var(--font-ui);font-weight:700;color:var(--success);">
                     ₹<?= number_format($o['revenue'], 0) ?>
                 </div>
             </td>
@@ -134,6 +148,7 @@ $owners = $conn->query("
                     <?php endif; ?>
                     <?php if ($o['is_suspended'] ?? 0): ?>
                     <form method="POST" style="display:inline;">
+                <?= saAuditCsrfField() ?>
                         <input type="hidden" name="owner_id" value="<?= $o['id'] ?>">
                         <input type="hidden" name="action" value="activate">
                         <button type="submit" class="btn-success-custom" style="padding:5px 10px;font-size:12px;">
@@ -142,6 +157,7 @@ $owners = $conn->query("
                     </form>
                     <?php else: ?>
                     <form method="POST" style="display:inline;">
+                <?= saAuditCsrfField() ?>
                         <input type="hidden" name="owner_id" value="<?= $o['id'] ?>">
                         <input type="hidden" name="action" value="suspend">
                         <button type="submit" class="btn-danger-custom" style="padding:5px 10px;font-size:12px;"
@@ -151,6 +167,7 @@ $owners = $conn->query("
                     </form>
                     <?php endif; ?>
                     <form method="POST" style="display:inline;">
+                <?= saAuditCsrfField() ?>
                         <input type="hidden" name="owner_id" value="<?= $o['id'] ?>">
                         <input type="hidden" name="action" value="delete">
                         <button type="submit" class="btn-danger-custom" style="padding:5px 10px;font-size:12px;"
@@ -164,6 +181,7 @@ $owners = $conn->query("
         <?php endwhile; ?>
         </tbody>
     </table>
+    </div>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

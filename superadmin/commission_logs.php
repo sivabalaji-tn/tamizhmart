@@ -72,14 +72,14 @@ require __DIR__ . '/includes/sidebar.php';
 ?>
 <style>
 .log-table{width:100%;border-collapse:collapse;font-size:13px;}
-.log-table th{padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--card-border);font-weight:700;}
+.log-table th{padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);background:var(--card-border);font-weight:700;}
 .log-table td{padding:11px 14px;border-top:1px solid var(--card-border);}
 .log-table tr:hover td{background:rgba(255,255,255,.02);}
 .tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--card-border);margin-bottom:20px;}
 .tab-btn{padding:10px 18px;border:none;background:none;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;display:flex;align-items:center;gap:7px;}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
 .tab-btn:hover:not(.active){color:var(--text);}
-.status-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;}
 .pill-active{background:rgba(16,185,129,.12);color:#059669;}
 .pill-trial{background:rgba(251,191,36,.12);color:#d97706;}
 .pill-grace{background:rgba(249,115,22,.12);color:#ea580c;}
@@ -104,19 +104,19 @@ require __DIR__ . '/includes/sidebar.php';
 <!-- Summary Stats -->
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;" class="animate-in">
     <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:16px 20px;text-align:center;">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#059669;">&#8377;<?= number_format($total_collected_all,2) ?></div>
+        <div style="font-family:var(--font-ui);font-weight:650;font-size:26px;color:#059669;">&#8377;<?= number_format($total_collected_all,2) ?></div>
         <div style="font-size:12px;color:var(--muted);margin-top:3px;">Total Collected (All Time)</div>
     </div>
     <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:16px 20px;text-align:center;">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#ea580c;">&#8377;<?= number_format($total_pending_all,2) ?></div>
+        <div style="font-family:var(--font-ui);font-weight:650;font-size:26px;color:#ea580c;">&#8377;<?= number_format($total_pending_all,2) ?></div>
         <div style="font-size:12px;color:var(--muted);margin-top:3px;">Currently Pending</div>
     </div>
     <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:16px 20px;text-align:center;">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--accent);"><?= $total_activations ?></div>
+        <div style="font-family:var(--font-ui);font-weight:650;font-size:26px;color:var(--accent);"><?= $total_activations ?></div>
         <div style="font-size:12px;color:var(--muted);margin-top:3px;">Activations (filtered period)</div>
     </div>
     <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:16px 20px;text-align:center;">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#ca8a04;"><?= $total_collections ?></div>
+        <div style="font-family:var(--font-ui);font-weight:650;font-size:26px;color:#ca8a04;"><?= $total_collections ?></div>
         <div style="font-size:12px;color:var(--muted);margin-top:3px;">Collections (filtered period)</div>
     </div>
 </div>
@@ -126,7 +126,7 @@ require __DIR__ . '/includes/sidebar.php';
     <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
         <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
         <div>
-            <label style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:5px;">Shop</label>
+            <label style="font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);display:block;margin-bottom:5px;">Shop</label>
             <select name="shop" class="input-custom" style="width:200px;">
                 <option value="0">All Shops</option>
                 <?php foreach ($shops_list as $sh): ?>
@@ -135,11 +135,11 @@ require __DIR__ . '/includes/sidebar.php';
             </select>
         </div>
         <div>
-            <label style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:5px;">From</label>
+            <label style="font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);display:block;margin-bottom:5px;">From</label>
             <input type="date" name="from" class="input-custom" value="<?= htmlspecialchars($date_from) ?>">
         </div>
         <div>
-            <label style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:5px;">To</label>
+            <label style="font-size:11px;text-transform:uppercase;letter-spacing:0;color:var(--muted);display:block;margin-bottom:5px;">To</label>
             <input type="date" name="to" class="input-custom" value="<?= htmlspecialchars($date_to) ?>">
         </div>
         <button type="submit" class="btn-primary-custom"><i class="bi bi-search"></i> Apply</button>
@@ -150,13 +150,13 @@ require __DIR__ . '/includes/sidebar.php';
 <!-- Tabs -->
 <div class="tab-bar">
     <a href="?tab=subscriptions&shop=<?= $filter_shop ?>&from=<?= $date_from ?>&to=<?= $date_to ?>" class="tab-btn <?= $tab==='subscriptions'?'active':'' ?>">
-        <i class="bi bi-shop"></i> Subscription History <span style="background:var(--card-border);padding:1px 7px;border-radius:99px;font-size:11px;"><?= count($sub_history) ?></span>
+        <i class="bi bi-shop"></i> Subscription History <span style="background:var(--card-border);padding:1px 7px;border-radius:4px;font-size:11px;"><?= count($sub_history) ?></span>
     </a>
     <a href="?tab=collections&shop=<?= $filter_shop ?>&from=<?= $date_from ?>&to=<?= $date_to ?>" class="tab-btn <?= $tab==='collections'?'active':'' ?>">
-        <i class="bi bi-cash-coin"></i> Commission Collections <span style="background:var(--card-border);padding:1px 7px;border-radius:99px;font-size:11px;"><?= count($collections) ?></span>
+        <i class="bi bi-cash-coin"></i> Commission Collections <span style="background:var(--card-border);padding:1px 7px;border-radius:4px;font-size:11px;"><?= count($collections) ?></span>
     </a>
     <a href="?tab=orders&shop=<?= $filter_shop ?>&from=<?= $date_from ?>&to=<?= $date_to ?>" class="tab-btn <?= $tab==='orders'?'active':'' ?>">
-        <i class="bi bi-receipt"></i> Per-Order Commission <span style="background:var(--card-border);padding:1px 7px;border-radius:99px;font-size:11px;"><?= count($order_log) ?></span>
+        <i class="bi bi-receipt"></i> Per-Order Commission <span style="background:var(--card-border);padding:1px 7px;border-radius:4px;font-size:11px;"><?= count($order_log) ?></span>
     </a>
 </div>
 
@@ -167,6 +167,7 @@ require __DIR__ . '/includes/sidebar.php';
     <div class="empty-state"><i class="bi bi-inbox" style="font-size:40px;display:block;margin-bottom:12px;"></i>No subscription records found for this period.</div>
     <?php else: ?>
     <div style="overflow-x:auto;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="commission logs table">
     <table class="log-table">
         <thead><tr>
             <th>Shop</th><th>Owner</th><th>Plan</th><th>Status</th>
@@ -206,6 +207,7 @@ require __DIR__ . '/includes/sidebar.php';
         </tbody>
     </table>
     </div>
+    </div>
     <?php endif; ?>
 </div>
 
@@ -220,11 +222,12 @@ require __DIR__ . '/includes/sidebar.php';
         $tab_total_comm    = array_sum(array_column($collections, 'commission_amount'));
     ?>
     <div style="display:flex;gap:24px;padding:16px 20px;border-bottom:1px solid var(--card-border);flex-wrap:wrap;">
-        <div><span style="font-size:12px;color:var(--muted);">Total Shop Revenue (period)</span><br><span style="font-size:20px;font-family:'Syne',sans-serif;font-weight:800;">&#8377;<?= number_format($tab_total_revenue,2) ?></span></div>
-        <div><span style="font-size:12px;color:var(--muted);">Total Commission Collected</span><br><span style="font-size:20px;font-family:'Syne',sans-serif;font-weight:800;color:#059669;">&#8377;<?= number_format($tab_total_comm,2) ?></span></div>
-        <div><span style="font-size:12px;color:var(--muted);">Collection Events</span><br><span style="font-size:20px;font-family:'Syne',sans-serif;font-weight:800;"><?= count($collections) ?></span></div>
+        <div><span style="font-size:12px;color:var(--muted);">Total Shop Revenue (period)</span><br><span style="font-size:20px;font-family:var(--font-ui);font-weight:650;">&#8377;<?= number_format($tab_total_revenue,2) ?></span></div>
+        <div><span style="font-size:12px;color:var(--muted);">Total Commission Collected</span><br><span style="font-size:20px;font-family:var(--font-ui);font-weight:650;color:#059669;">&#8377;<?= number_format($tab_total_comm,2) ?></span></div>
+        <div><span style="font-size:12px;color:var(--muted);">Collection Events</span><br><span style="font-size:20px;font-family:var(--font-ui);font-weight:650;"><?= count($collections) ?></span></div>
     </div>
     <div style="overflow-x:auto;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="commission logs table">
     <table class="log-table">
         <thead><tr>
             <th>Date</th><th>Shop</th><th>Plan</th><th>Period Covered</th>
@@ -246,7 +249,7 @@ require __DIR__ . '/includes/sidebar.php';
             <td style="text-align:right;"><?= $c['order_count'] ?></td>
             <td style="text-align:right;">&#8377;<?= number_format($c['total_revenue'],2) ?></td>
             <td style="text-align:right;color:#ca8a04;font-weight:700;"><?= $c['commission_rate'] ?>%</td>
-            <td style="text-align:right;font-family:'Syne',sans-serif;font-weight:800;color:#059669;">&#8377;<?= number_format($c['commission_amount'],2) ?></td>
+            <td style="text-align:right;font-family:var(--font-ui);font-weight:650;color:#059669;">&#8377;<?= number_format($c['commission_amount'],2) ?></td>
             <td style="font-size:12px;color:var(--muted);max-width:180px;"><?= htmlspecialchars($c['note'] ?: '—') ?></td>
             <td style="font-size:12px;color:var(--muted);"><?= htmlspecialchars($c['collected_by_name'] ?? '—') ?></td>
         </tr>
@@ -255,11 +258,12 @@ require __DIR__ . '/includes/sidebar.php';
             <td colspan="5" style="padding:11px 14px;font-weight:700;text-align:right;">Total</td>
             <td style="padding:11px 14px;text-align:right;font-weight:700;">&#8377;<?= number_format($tab_total_revenue,2) ?></td>
             <td></td>
-            <td style="padding:11px 14px;text-align:right;font-family:'Syne',sans-serif;font-weight:800;color:#059669;">&#8377;<?= number_format($tab_total_comm,2) ?></td>
+            <td style="padding:11px 14px;text-align:right;font-family:var(--font-ui);font-weight:650;color:#059669;">&#8377;<?= number_format($tab_total_comm,2) ?></td>
             <td colspan="2"></td>
         </tr>
         </tbody>
     </table>
+    </div>
     </div>
     <?php endif; ?>
 </div>
@@ -271,6 +275,7 @@ require __DIR__ . '/includes/sidebar.php';
     <div class="empty-state"><i class="bi bi-inbox" style="font-size:40px;display:block;margin-bottom:12px;"></i>No commission orders found for this period.</div>
     <?php else: ?>
     <div style="overflow-x:auto;">
+    <div class="table-scroll" role="region" tabindex="0" aria-label="commission logs table">
     <table class="log-table">
         <thead><tr>
             <th>Date</th><th>Shop</th><th>Order #</th>
@@ -290,7 +295,7 @@ require __DIR__ . '/includes/sidebar.php';
         <tr>
             <td style="font-size:12px;white-space:nowrap;"><?= date('d M Y H:i', strtotime($ol['created_at'])) ?></td>
             <td style="font-weight:600;"><?= htmlspecialchars($ol['shop_name']) ?></td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">#<?= $ol['order_id'] ?></td>
+            <td style="font-family:var(--font-ui);font-size:12px;">#<?= $ol['order_id'] ?></td>
             <td style="text-align:right;">&#8377;<?= number_format($ol['order_amount'],2) ?></td>
             <td style="text-align:right;color:#ca8a04;font-weight:700;"><?= $ol['commission_rate'] ?>%</td>
             <td style="text-align:right;font-weight:700;">&#8377;<?= number_format($ol['commission_amount'],2) ?></td>
@@ -306,7 +311,7 @@ require __DIR__ . '/includes/sidebar.php';
         <?php endforeach; ?>
         <tr style="border-top:2px solid var(--card-border);background:rgba(200,169,126,.05);">
             <td colspan="5" style="padding:11px 14px;font-weight:700;text-align:right;">Totals</td>
-            <td style="padding:11px 14px;text-align:right;font-family:'Syne',sans-serif;font-weight:800;">&#8377;<?= number_format($tab3_pending+$tab3_collected,2) ?></td>
+            <td style="padding:11px 14px;text-align:right;font-family:var(--font-ui);font-weight:650;">&#8377;<?= number_format($tab3_pending+$tab3_collected,2) ?></td>
             <td style="padding:11px 14px;text-align:center;font-size:12px;color:var(--muted);">
                 <span class="status-pill pill-pending">&#8377;<?= number_format($tab3_pending,2) ?></span>
                 <span class="status-pill pill-collected" style="margin-left:4px;">&#8377;<?= number_format($tab3_collected,2) ?></span>
@@ -315,6 +320,7 @@ require __DIR__ . '/includes/sidebar.php';
         </tr>
         </tbody>
     </table>
+    </div>
     </div>
     <?php endif; ?>
 </div>
