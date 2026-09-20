@@ -12,7 +12,9 @@ if (!isset($_SESSION['handler_id'])) {
 
 $handler_id = (int)$_SESSION['handler_id'];
 $shop_id    = (int)$_SESSION['handler_shop_id'];
+session_write_close(); // Release session lock immediately
 $order_id   = (int)($_POST['order_id'] ?? 0);
+
 
 if (!$order_id) { echo json_encode(['error' => 'Invalid order ID']); exit; }
 
@@ -30,11 +32,18 @@ if (!$customer_email) { echo json_encode(['error' => 'Customer has no email on r
 
 // Generate 6-digit OTP
 $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-$expires = date('Y-m-d H:i:s', strtotime('+15 minutes'));
 
-// Upsert OTP (replace if exists)
-$ins = $conn->prepare("INSERT INTO delivery_otps (order_id, handler_id, otp_code, expires_at) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE handler_id=VALUES(handler_id), otp_code=VALUES(otp_code), sent_at=NOW(), expires_at=VALUES(expires_at), verified_at=NULL");
-$ins->bind_param('iiss', $order_id, $handler_id, $otp, $expires);
+// expires_at computed entirely by MySQL so both stored time and NOW() comparison
+// use the exact same DB server clock — avoids PHP/MySQL timezone mismatch on production
+$ins = $conn->prepare("INSERT INTO delivery_otps (order_id, handler_id, otp_code, expires_at)
+    VALUES (?,?,?, NOW() + INTERVAL 15 MINUTE)
+    ON DUPLICATE KEY UPDATE
+        handler_id  = VALUES(handler_id),
+        otp_code    = VALUES(otp_code),
+        sent_at     = NOW(),
+        expires_at  = NOW() + INTERVAL 15 MINUTE,
+        verified_at = NULL");
+$ins->bind_param('iis', $order_id, $handler_id, $otp);
 $ins->execute();
 
 // Log OTP sent
@@ -99,24 +108,53 @@ $html = <<<HTML
 </body></html>
 HTML;
 
-try {
-    $mail = new PHPMailer(true);
-    $mail->isSMTP();
-    $mail->Host       = 'smtp.gmail.com';
-    $mail->SMTPAuth   = true;
-    $mail->Username   = 'sivathetechie24@gmail.com';
-    $mail->Password   = 'yjqz ofcg htvl qxfu';
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = 587;
-    $mail->CharSet    = 'UTF-8';
-    $mail->setFrom('sivathetechie24@gmail.com', $order['shop_name']);
-    $mail->addAddress($customer_email, $order['cname']);
-    $mail->isHTML(true);
-    $mail->Subject = '🚚 Your Delivery OTP for Order ' . $order_num . ' — ' . $order['shop_name'];
-    $mail->Body    = $html;
-    $mail->send();
+// ── Detect localhost / dev environment ─────────────────────────
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$is_local = in_array($host, ['localhost', '127.0.0.1', '::1'])
+            || str_ends_with($host, '.local')
+            || preg_match('/:\d{4,5}$/', $host); // e.g. localhost:8080
 
-    echo json_encode(['success' => true, 'masked_email' => substr($customer_email, 0, 3) . '***@' . explode('@', $customer_email)[1]]);
-} catch (Exception $e) {
-    echo json_encode(['error' => 'Failed to send OTP email: ' . $mail->ErrorInfo]);
+$masked = substr($customer_email, 0, 3) . '***@' . explode('@', $customer_email)[1];
+
+if ($is_local) {
+    // ── LOCAL / DEV: skip SMTP, show OTP directly to handler ──────
+    // Safe — handler is authenticated staff, not the customer
+    error_log("[DEV] OTP for order #{$order_id}: {$otp} → {$customer_email}");
+    echo json_encode([
+        'success'      => true,
+        'masked_email' => $masked,
+        'dev_otp'      => $otp,   // shown in JS alert on localhost only
+        'dev_note'     => "DEV MODE — SMTP skipped. OTP: {$otp}"
+    ]);
+} else {
+    // ── PRODUCTION: send via PHPMailer ────────────────────────────
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'sivathetechie24@gmail.com';
+        $mail->Password   = 'yjqz ofcg htvl qxfu';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->CharSet    = 'UTF-8';
+        $mail->setFrom('sivathetechie24@gmail.com', $order['shop_name']);
+        $mail->addAddress($customer_email, $order['cname']);
+        $mail->isHTML(true);
+        $mail->Subject = '🚚 Your Delivery OTP for Order ' . $order_num . ' — ' . $order['shop_name'];
+        $mail->Body    = $html;
+        $mail->send();
+
+        echo json_encode(['success' => true, 'masked_email' => $masked]);
+
+    } catch (Exception $e) {
+        // SMTP failed on production — OTP still saved in DB.
+        // Don't block delivery; handler must call customer directly.
+        error_log("OTP email FAILED for order #{$order_id}: " . $mail->ErrorInfo);
+        echo json_encode([
+            'success'      => true,
+            'masked_email' => $masked,
+            'smtp_warning' => 'Email could not be sent. Ask customer to check inbox or call them directly. OTP is still valid.'
+        ]);
+    }
 }

@@ -93,31 +93,21 @@ $fallback_grads = [
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- Local compiled CSS — always loads, no CDN dependency -->
+<link rel="stylesheet" href="assets/css/index-compiled.css">
+<!-- Tailwind CDN as silent progressive-enhancement fallback only -->
 <script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        gold: '#c8a97e',
-        'gold-light': '#e8c99e',
-        dark: '#1a1208',
-        surface: '#f4f0ea',
-        light: '#faf7f2',
-      },
-      fontFamily: {
-        syne: ['Syne', 'sans-serif'],
-        dm: ['DM Sans', 'sans-serif'],
-      },
-      boxShadow: {
-        'card': '0 2px 16px rgba(26,18,8,0.07), 0 8px 32px rgba(26,18,8,0.04)',
-        'hover': '0 12px 48px rgba(26,18,8,0.14), 0 2px 8px rgba(26,18,8,0.06)',
-        'gold': '0 8px 28px rgba(200,169,126,0.35)',
-        'nav': '0 4px 18px rgba(26,18,8,0.18)',
-      },
+(function(){
+  var s=document.createElement('script');
+  s.src='https://cdn.tailwindcss.com';
+  s.onerror=function(){};
+  s.onload=function(){
+    if(window.tailwind){
+      tailwind.config={theme:{extend:{colors:{gold:'#c8a97e','gold-light':'#e8c99e',dark:'#1a1208',surface:'#f4f0ea',light:'#faf7f2'},fontFamily:{syne:['Syne','sans-serif'],dm:['DM Sans','sans-serif']},boxShadow:{'card':'0 2px 16px rgba(26,18,8,0.07),0 8px 32px rgba(26,18,8,0.04)','hover':'0 12px 48px rgba(26,18,8,0.14),0 2px 8px rgba(26,18,8,0.06)','gold':'0 8px 28px rgba(200,169,126,0.35)','nav':'0 4px 18px rgba(26,18,8,0.18)'}}}}
     }
-  }
-}
+  };
+  document.head.appendChild(s);
+})();
 </script>
 <style>
   *,*::before,*::after{box-sizing:border-box;}

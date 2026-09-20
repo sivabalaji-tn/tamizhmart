@@ -8,6 +8,8 @@ if (!isset($_SESSION['handler_id'])) { http_response_code(403); exit; }
 
 $order_id = (int)($_GET['order_id'] ?? 0);
 $shop_id  = (int)$_SESSION['handler_shop_id'];
+session_write_close(); // Release session lock
+
 
 $check = $conn->query("SELECT id FROM orders WHERE id=$order_id AND shop_id=$shop_id");
 if ($check->num_rows === 0) { http_response_code(403); exit; }

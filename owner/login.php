@@ -376,7 +376,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         type="email"
                         name="email"
                         class="form-control-custom"
-                        placeholder="seller@example.com"
+                        placeholder="Enter Seller E-mail"
                         required
                         autofocus
                         value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"

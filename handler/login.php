@@ -138,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="input-wrapper">
                 <i class="bi bi-envelope input-icon"></i>
                 <input type="email" id="email" name="email" class="form-input with-icon"
-                    placeholder="your@email.com"
+                    placeholder="Enter you E-mail"
                     value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
                     required autofocus>
             </div>

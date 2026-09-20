@@ -477,8 +477,22 @@ function sendOtp() {
         if (data.success) {
             document.getElementById('sendOtpArea').style.display = 'none';
             document.getElementById('otpEntryArea').style.display = 'block';
-            showOtpMsg('📧 OTP sent to ' + data.masked_email + '. Ask the customer for it.', 'info');
-            document.getElementById('otpInput')?.focus();
+
+            if (data.dev_otp) {
+                // ── DEV / LOCALHOST MODE — show OTP directly ──
+                showOtpMsg('🛠️ DEV MODE — Email skipped. OTP: ' + data.dev_otp, 'info');
+                // Pre-fill the OTP input for faster testing
+                const input = document.getElementById('otpInput');
+                if (input) { input.value = data.dev_otp; input.focus(); }
+            } else if (data.smtp_warning) {
+                // ── SMTP failed on production ──
+                showOtpMsg('⚠️ ' + data.smtp_warning, 'error');
+                document.getElementById('otpInput')?.focus();
+            } else {
+                // ── Normal production flow ──
+                showOtpMsg('📧 OTP sent to ' + data.masked_email + '. Ask the customer for it.', 'info');
+                document.getElementById('otpInput')?.focus();
+            }
         } else {
             alert('Failed to send OTP: ' + (data.error || 'Unknown error'));
             // Reset swipe
@@ -493,6 +507,7 @@ function sendOtp() {
     })
     .catch(() => alert('Network error. Please try again.'));
 }
+
 
 // ── Verify OTP ────────────────────────────────────────────────
 function verifyOtp() {
