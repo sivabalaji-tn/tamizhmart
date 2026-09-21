@@ -818,16 +818,106 @@ $slug      = $shop['slug'] ?? '';
 
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
+<?php
+$_base_url   = 'https://tamizhmart.in';
+$_shop_slug  = htmlspecialchars($slug ?? $shop['slug'] ?? '');
+$_page_name  = basename($_SERVER['PHP_SELF']);
+$_req_uri    = $_SERVER['REQUEST_URI'] ?? '';
+$_curr_url   = $_base_url . $_req_uri;
+
+$_seo_title = (isset($page_title) ? htmlspecialchars($page_title) . ' — ' : '') . htmlspecialchars($shop['name'] ?? 'TamizhMart');
+$_seo_desc  = htmlspecialchars(substr(strip_tags($shop['description'] ?? ('Shop online at ' . ($shop['name'] ?? 'TamizhMart'))), 0, 160));
+
+// Resolve image for social previews (OG image)
+$_seo_image = $_base_url . '/assets/icons/mart-removebg-preview.png';
+if (isset($product) && !empty($product['image'])) {
+    if (strpos($product['image'], 'http') === 0) {
+        $_seo_image = $product['image'];
+    } else {
+        $_seo_image = $_base_url . '/assets/uploads/products/' . $product['image'];
+    }
+} elseif (isset($product) && !empty($product['image_url'])) {
+    $_seo_image = $product['image_url'];
+} elseif (!empty($shop['logo'])) {
+    $_seo_image = (strpos($shop['logo'], 'http') === 0) ? $shop['logo'] : ($_base_url . '/assets/uploads/logos/' . $shop['logo']);
+} elseif (!empty($shop['banner'])) {
+    $_seo_image = (strpos($shop['banner'], 'http') === 0) ? $shop['banner'] : ($_base_url . '/assets/uploads/banners/' . $shop['banner']);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($page_title) ? htmlspecialchars($page_title).' — ' : '' ?><?= htmlspecialchars($shop['name']) ?></title>
-    <meta name="description" content="<?= htmlspecialchars($shop['description'] ?? 'Shop online at '.$shop['name']) ?>">
-    <!-- PWA -->
+
+    <!-- Primary Meta Tags -->
+    <title><?= $_seo_title ?></title>
+    <meta name="description" content="<?= $_seo_desc ?>">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="<?= htmlspecialchars($_curr_url) ?>">
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="<?= isset($product) ? 'product' : 'website' ?>">
+    <meta property="og:url" content="<?= htmlspecialchars($_curr_url) ?>">
+    <meta property="og:title" content="<?= $_seo_title ?>">
+    <meta property="og:description" content="<?= $_seo_desc ?>">
+    <meta property="og:image" content="<?= htmlspecialchars($_seo_image) ?>">
+    <meta property="og:site_name" content="<?= htmlspecialchars($shop['name'] ?? 'TamizhMart') ?>">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= $_seo_title ?>">
+    <meta name="twitter:description" content="<?= $_seo_desc ?>">
+    <meta name="twitter:image" content="<?= htmlspecialchars($_seo_image) ?>">
+
+    <!-- PWA Theme Color -->
     <meta name="theme-color" content="<?= htmlspecialchars($primary) ?>">
-    <link rel="manifest" href="../manifest.php?shop=<?= $slug ?>">
+    <link rel="manifest" href="../manifest.php?shop=<?= $_shop_slug ?>">
+
+    <!-- JSON-LD: Schema.org LocalBusiness / OnlineStore -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      "name": "<?= addslashes(htmlspecialchars($shop['name'] ?? '')) ?>",
+      "url": "<?= $_base_url ?>/shop/index.php?shop=<?= urlencode($_shop_slug) ?>",
+      "description": "<?= addslashes($_seo_desc) ?>",
+      "image": "<?= htmlspecialchars($_seo_image) ?>"
+      <?php if (!empty($shop['city'])): ?>,
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "<?= addslashes(htmlspecialchars($shop['city'])) ?>",
+        "addressRegion": "<?= addslashes(htmlspecialchars($shop['state'] ?? 'Tamil Nadu')) ?>",
+        "addressCountry": "IN"
+      }
+      <?php endif; ?>
+    }
+    </script>
+
+    <?php if (isset($product)): ?>
+    <!-- JSON-LD: Schema.org Product -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "<?= addslashes(htmlspecialchars($product['name'] ?? '')) ?>",
+      "image": [ "<?= htmlspecialchars($_seo_image) ?>" ],
+      "description": "<?= addslashes(htmlspecialchars(substr(strip_tags($product['description'] ?? $product['name']), 0, 200))) ?>",
+      "offers": {
+        "@type": "Offer",
+        "url": "<?= htmlspecialchars($_curr_url) ?>",
+        "priceCurrency": "INR",
+        "price": "<?= floatval(($product['discount_price'] && $product['discount_price'] > 0) ? $product['discount_price'] : $product['price']) ?>",
+        "availability": "<?= (isset($product['stock']) && $product['stock'] > 0) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' ?>",
+        "seller": {
+          "@type": "Organization",
+          "name": "<?= addslashes(htmlspecialchars($shop['name'] ?? '')) ?>"
+        }
+      }
+    }
+    </script>
+    <?php endif; ?>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=<?= urlencode($font) ?>:wght@300;400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">

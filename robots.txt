@@ -1,0 +1,24 @@
+﻿User-agent: *
+Allow: /
+Allow: /shop/
+Allow: /shop/index.php
+Allow: /shop/products.php
+Allow: /shop/product.php
+
+Disallow: /owner/
+Disallow: /superadmin/
+Disallow: /config/
+Disallow: /handler/
+Disallow: /logs/
+Disallow: /shop/cart.php
+Disallow: /shop/checkout.php
+Disallow: /shop/orders.php
+Disallow: /shop/profile.php
+Disallow: /shop/razorpay_*
+Disallow: /shop/coupon_check.php
+Disallow: /shop/cart_action.php
+Disallow: /auth/
+Disallow: /vendor/
+Disallow: /docker/
+
+Sitemap: https://tamizhmart.in/sitemap.php

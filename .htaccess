@@ -1,123 +1,56 @@
-# ============================================================
-# TamizhMart — Apache .htaccess
-# Place this in /tamizhmart/ (your project root)
-# ============================================================
+# TamizhMart — Apache Config (SM Tech / Siva Balaji SM)
 
-Options -Indexes
-Options -MultiViews
-ServerSignature Off
-
-# ── Rewrite Engine ───────────────────────────────────────────
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
 
-    # Force HTTPS on production only (skip localhost/dev)
-    RewriteCond %{HTTPS} off
-    RewriteCond %{HTTP_HOST} !^localhost [NC]
-    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    # Canonical www redirect
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
 
-    # Remove trailing slashes
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)/$ /$1 [L,R=301]
-
-    # Protect sensitive files
-    RewriteRule ^config/.*$    - [F,L]
-    RewriteRule ^\.env$        - [F,L]
-    RewriteRule ^.*\.sql$      - [F,L]
-    RewriteRule ^.*\.log$      - [F,L]
-    RewriteRule ^.*\.sh$       - [F,L]
-    RewriteRule ^composer\..*$ - [F,L]
-
-    # Serve sw.js from root with correct scope
-    RewriteRule ^sw\.js$ sw.js [L]
-
-    # ── Clean Shop URLs ──────────────────────────────────────
-    # Before:  /shop/index.php?shop=sm-store-1772034769
-    # After:   /sm-store   OR   /shop/sm-store
-    #
-    # Option A: /slug  →  shop/index.php?shop=slug  (root access)
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} !^/(owner|superadmin|auth|assets|uploads|config|shop/index\.php)
-    RewriteRule ^([a-z0-9][a-z0-9-]*)/?$ shop/index.php?shop=$1 [L,QSA]
-    #
-    # Option B: /shop/slug  →  shop/index.php?shop=slug
-    RewriteRule ^shop/([a-z0-9][a-z0-9-]*)/?$ shop/index.php?shop=$1 [L,QSA]
-
-    # 404 handler
-    ErrorDocument 404 /404.php
-    ErrorDocument 403 /404.php
+    # Block sensitive directories
+    RewriteRule ^(config|logs|docker|vendor|databasefile)/ - [F,L]
 </IfModule>
 
-# ── Security Headers ─────────────────────────────────────────
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options    "nosniff"
-    Header always set X-Frame-Options           "SAMEORIGIN"
-    Header always set X-XSS-Protection          "1; mode=block"
-    Header always set Referrer-Policy           "strict-origin-when-cross-origin"
-    Header always set Permissions-Policy        "geolocation=(), microphone=(), camera=()"
-
-    # Service Worker headers
-    <FilesMatch "sw\.js$">
-        Header set Service-Worker-Allowed "/"
-        Header set Cache-Control "no-cache, no-store, must-revalidate"
-    </FilesMatch>
-
-    # Manifest headers
-    <FilesMatch "manifest\.php$">
-        Header set Content-Type "application/manifest+json"
-        Header set Cache-Control "public, max-age=3600"
-    </FilesMatch>
+# Prevent directory indexing safely
+<IfModule mod_autoindex.c>
+    Options -Indexes
 </IfModule>
 
-# ── Browser Caching ──────────────────────────────────────────
+# Cache static assets (speed = SEO ranking factor)
 <IfModule mod_expires.c>
     ExpiresActive On
-
-    # Images — 1 month
+    ExpiresByType image/jpg         "access plus 1 month"
     ExpiresByType image/jpeg        "access plus 1 month"
     ExpiresByType image/png         "access plus 1 month"
     ExpiresByType image/webp        "access plus 1 month"
     ExpiresByType image/gif         "access plus 1 month"
     ExpiresByType image/svg+xml     "access plus 1 month"
-    ExpiresByType image/x-icon      "access plus 1 year"
-
-    # CSS / JS — 1 week
     ExpiresByType text/css          "access plus 1 week"
     ExpiresByType text/javascript   "access plus 1 week"
     ExpiresByType application/javascript "access plus 1 week"
-
-    # Fonts — 1 year
-    ExpiresByType font/woff2        "access plus 1 year"
-    ExpiresByType font/woff         "access plus 1 year"
-    ExpiresByType application/font-woff "access plus 1 year"
-
-    # HTML / PHP — no cache
-    ExpiresByType text/html         "access plus 0 seconds"
+    ExpiresByType font/woff2        "access plus 1 month"
 </IfModule>
 
-# ── Compression ──────────────────────────────────────────────
+# Gzip compression
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html
-    AddOutputFilterByType DEFLATE text/css
-    AddOutputFilterByType DEFLATE text/javascript
-    AddOutputFilterByType DEFLATE application/javascript
-    AddOutputFilterByType DEFLATE application/json
-    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
 </IfModule>
 
-# ── Upload size limit ────────────────────────────────────────
-<IfModule mod_php.c>
-    php_value upload_max_filesize 10M
-    php_value post_max_size 12M
-    php_value max_execution_time 60
-    php_value memory_limit 256M
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
-# ── Block bad bots & scrapers ────────────────────────────────
-<IfModule mod_rewrite.c>
-    RewriteCond %{HTTP_USER_AGENT} (ahrefs|semrush|dotbot|MJ12bot) [NC]
-    RewriteRule .* - [F,L]
+# PHP configuration (safely wrapped for mod_php only to prevent 500 on PHP-FPM)
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_value error_reporting 0
 </IfModule>
+<IfModule mod_php8.c>
+    php_flag display_errors Off
+    php_value error_reporting 0
+</IfModule>
+
+

@@ -87,9 +87,77 @@ $fallback_grads = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= htmlspecialchars($site_name) ?> — Shop Local in <?= htmlspecialchars($site_city) ?></title>
+
+<?php
+$_base_url  = 'https://tamizhmart.in';
+$_page_url  = $_base_url . '/';
+$_og_title  = htmlspecialchars($site_name) . ' — Shop Local in ' . htmlspecialchars($site_city);
+$_og_desc   = 'Discover and shop from local stores in ' . htmlspecialchars($site_city) . '. Fresh groceries, medicines, sweets and more — delivered to your door.';
+$_og_image  = $_base_url . '/assets/icons/mart-removebg-preview.png';
+?>
+
+<!-- Primary SEO -->
+<title><?= $_og_title ?></title>
+<meta name="description" content="<?= $_og_desc ?>">
+<meta name="keywords" content="<?= htmlspecialchars($site_city) ?> online shopping, local shops <?= htmlspecialchars($site_city) ?>, groceries <?= htmlspecialchars($site_city) ?>, <?= htmlspecialchars($site_name) ?>, shop local Tamil Nadu, buy local products">
+<meta name="author" content="SM Tech — Siva Balaji SM">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="<?= $_page_url ?>">
+
+<!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="<?= $_page_url ?>">
+<meta property="og:title"       content="<?= $_og_title ?>">
+<meta property="og:description" content="<?= $_og_desc ?>">
+<meta property="og:image"       content="<?= $_og_image ?>">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:site_name"   content="<?= htmlspecialchars($site_name) ?>">
+<meta property="og:locale"      content="en_IN">
+
+<!-- Twitter Card -->
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="<?= $_og_title ?>">
+<meta name="twitter:description" content="<?= $_og_desc ?>">
+<meta name="twitter:image"       content="<?= $_og_image ?>">
+
+<!-- JSON-LD: WebSite + SearchAction (enables Google Sitelinks search box) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "<?= addslashes(htmlspecialchars($site_name)) ?>",
+  "url": "<?= $_base_url ?>/",
+  "description": "<?= addslashes($_og_desc) ?>",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "<?= $_base_url ?>/?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+<!-- JSON-LD: Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "<?= addslashes(htmlspecialchars($site_name)) ?>",
+  "url": "<?= $_base_url ?>/",
+  "logo": "<?= $_og_image ?>",
+  "description": "White-label local e-commerce platform for <?= htmlspecialchars($site_city) ?> shops",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "<?= htmlspecialchars($site_city) ?>",
+    "addressCountry": "IN"
+  }
+}
+</script>
+
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/mart-removebg-preview.png">
-<meta name="description" content="Discover and shop from local stores in <?= htmlspecialchars($site_city) ?>. Fresh groceries, medicines, sweets and more delivered to your door.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
