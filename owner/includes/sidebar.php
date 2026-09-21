@@ -13,6 +13,7 @@ $shop_stmt->execute();
 $shop = $shop_stmt->get_result()->fetch_assoc();
 
 $current_page = basename($_SERVER['PHP_SELF']);
+require_once __DIR__ . '/debug_access.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -629,6 +630,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="social.php" class="nav-item <?= $current_page === 'social.php' ? 'active' : '' ?>">
             <i class="bi bi-share-fill"></i> Social Links
         </a>
+
+        <?php if (ownerDebugEnabled()): ?>
+        <div class="nav-section-label">Testing</div>
+        <a href="debugging.php" class="nav-item <?= $current_page === 'debugging.php' ? 'active' : '' ?>">
+            <i class="bi bi-tools"></i> Debugging the Platform
+        </a>
+        <?php endif; ?>
 
         <div class="nav-section-label">Live Store</div>
         <a href="../shop/index.php?shop=<?= $shop['slug'] ?>" class="nav-item" target="_blank">

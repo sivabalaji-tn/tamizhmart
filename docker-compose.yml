@@ -5,6 +5,9 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
     container_name: tamizhmart_php
+    environment:
+      APP_ENV: development
+      OWNER_DEBUG_TOOLS: "1"
     ports:
       - "8080:80"
     volumes:
