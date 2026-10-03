@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 require '../config/db.php';
 require_once '../email/campaign_email.php';
+require_once __DIR__.'/../shop/includes/customer_account.php';
 
 if (!isset($_SESSION['owner_id'], $_SESSION['shop_id'])) {
     header("Location: login.php");
@@ -9,7 +10,7 @@ if (!isset($_SESSION['owner_id'], $_SESSION['shop_id'])) {
 }
 
 $page_title = 'Email Campaigns';
-$page_subtitle = 'Promote products to customers registered in your shop';
+$page_subtitle = 'Promote products to subscribed customers in your shop';
 $topbar_action_label = 'Compose Campaign';
 $topbar_action_icon = 'envelope-plus';
 $topbar_action_onclick = "document.getElementById('campaignComposer').scrollIntoView({behavior:'smooth',block:'start'})";
@@ -87,34 +88,7 @@ function currentCampaignAllowance($conn, $shop_id, $month_key) {
 }
 
 function campaignRecipients($conn, $shop_id, $audience_type) {
-    if ($audience_type === 'buyers') {
-        $sql = "SELECT DISTINCT u.id, u.name, u.email
-                FROM users u
-                JOIN orders o ON o.user_id=u.id AND o.shop_id=u.shop_id
-                WHERE u.shop_id=? AND u.is_active=1 AND u.email!=''";
-    } elseif ($audience_type === 'recent_buyers') {
-        $sql = "SELECT DISTINCT u.id, u.name, u.email
-                FROM users u
-                JOIN orders o ON o.user_id=u.id AND o.shop_id=u.shop_id
-                WHERE u.shop_id=? AND u.is_active=1 AND u.email!=''
-                  AND o.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)";
-    } elseif ($audience_type === 'inactive_customers') {
-        $sql = "SELECT DISTINCT u.id, u.name, u.email
-                FROM users u
-                WHERE u.shop_id=? AND u.is_active=1 AND u.email!=''
-                  AND NOT EXISTS (
-                      SELECT 1 FROM orders o
-                      WHERE o.user_id=u.id AND o.shop_id=u.shop_id
-                        AND o.created_at >= DATE_SUB(NOW(), INTERVAL 60 DAY)
-                  )";
-    } else {
-        $sql = "SELECT DISTINCT id, name, email FROM users WHERE shop_id=? AND is_active=1 AND email!=''";
-    }
-
-    $st = $conn->prepare($sql);
-    $st->bind_param('i', $shop_id);
-    $st->execute();
-    return $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    return caCampaignRecipients($conn, (int)$shop_id, $audience_type);
 }
 
 function fetchCampaignProducts($conn, $shop_id, $ids) {
@@ -129,6 +103,7 @@ function fetchCampaignProducts($conn, $shop_id, $ids) {
 }
 
 ensureEmailCampaignTables($conn);
+caEnsure($conn);
 require 'includes/sidebar.php';
 
 $shop_id = (int)$_SESSION['shop_id'];
@@ -146,7 +121,7 @@ $presets = [
 ];
 
 $audiences = [
-    'all_registered' => 'All registered customers',
+    'all_registered' => 'All subscribed customers',
     'buyers' => 'Customers who ordered before',
     'recent_buyers' => 'Recent buyers - last 90 days',
     'inactive_customers' => 'Inactive customers - no order in 60 days',
@@ -190,7 +165,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '')
         $recipients = campaignRecipients($conn, $shop_id, $audience_type);
 
         if (!$recipients) {
-            $error = 'No matching registered customers found for the selected audience.';
+            $error = 'No subscribed customers match this audience. Customers can opt in under My Account > Email preferences.';
         } else {
             $status = 'draft';
             $recipient_count = count($recipients);
@@ -242,6 +217,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '')
             $log = $conn->prepare("INSERT INTO email_campaign_recipients (campaign_id, user_id, email, status, sent_at, error_message) VALUES (?, ?, ?, ?, ?, ?)");
 
             foreach ($recipients as $r) {
+                if (!caMarketingAllowed($conn,(int)$r['id'],$shop_id,$r['email'])) {
+                    $uid=(int)$r['id']; $email=$r['email']; $row_status='skipped'; $sent_at=null; $msg='Customer unsubscribed before delivery';
+                    $log->bind_param('iissss',$campaign_id,$uid,$email,$row_status,$sent_at,$msg); $log->execute();
+                    continue;
+                }
                 $sent = sendCampaignEmail($r['email'], $r['name'] ?: 'Customer', $shop, $campaign, $selected_products);
                 $row_status = $sent ? 'sent' : 'failed';
                 $sent_at = $sent ? date('Y-m-d H:i:s') : null;
@@ -275,7 +255,7 @@ $products_q = $conn->query("SELECT id, name, price, discount_price, stock, image
                             ORDER BY created_at DESC");
 $products = $products_q ? $products_q->fetch_all(MYSQLI_ASSOC) : [];
 
-$customers_total = (int)$conn->query("SELECT COUNT(*) FROM users WHERE shop_id=$shop_id AND is_active=1 AND email!=''")->fetch_row()[0];
+$customers_total = count(campaignRecipients($conn,$shop_id,'all_registered'));
 $sent_total = (int)$conn->query("SELECT COALESCE(SUM(sent_count),0) FROM email_campaigns WHERE shop_id=$shop_id")->fetch_row()[0];
 $campaign_total = (int)$conn->query("SELECT COUNT(*) FROM email_campaigns WHERE shop_id=$shop_id")->fetch_row()[0];
 $remaining = max(0, (int)$allowance['monthly_limit'] - (int)$allowance['used_count']);
@@ -339,7 +319,7 @@ $history = $conn->query("SELECT * FROM email_campaigns WHERE shop_id=$shop_id OR
     <div class="campaign-stat">
         <div class="lbl">Customers reachable</div>
         <div class="num"><?= number_format($customers_total) ?></div>
-        <div class="sub">Only registered customers of this shop</div>
+        <div class="sub">Registered customers who opted in to this shop's emails</div>
     </div>
     <div class="campaign-stat">
         <div class="lbl">Total sent</div>

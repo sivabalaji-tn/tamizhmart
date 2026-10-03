@@ -5,7 +5,9 @@
  * This prevents "headers already sent" errors.
  */
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 
 // ── Shop ─────────────────────────────────────────────────────
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? '';
@@ -30,7 +32,9 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 $user_id = (int)$_SESSION['user_id'];
-$user    = $conn->query("SELECT * FROM users WHERE id=$user_id LIMIT 1")->fetch_assoc();
+$user    = caRequireCustomer($conn,$shop);
+caEnsure($conn);
+$saved_addresses=caQuery($conn,'SELECT * FROM customer_addresses WHERE user_id=? AND shop_id=? ORDER BY is_default DESC,id DESC',[$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // ── Cart — redirect before any output ────────────────────────
 $cq = $conn->query("
@@ -397,7 +401,9 @@ requireCustomerLogin($shop);
                     <?php endif; ?>
                     <div>
                         <label style="font-size:12.5px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">Delivery Address <span style="color:#ef4444;">*</span></label>
+                        <?php if ($saved_addresses): ?><label for="saved-address" style="font-size:13px;display:block;margin-bottom:8px">Saved address</label><select id="saved-address" class="input-shop" style="margin-bottom:12px" onchange="if(this.value)document.getElementById('addrField').value=this.value"><option value="">Enter address manually</option><?php foreach($saved_addresses as $a): ?><option value="<?= caEscape(caAddressText($a)) ?>" <?= $a['is_default']?'selected':'' ?>><?= caEscape($a['label'].' - '.$a['city']) ?></option><?php endforeach; ?></select><?php endif; ?>
                         <textarea id="addrField" class="input-shop" placeholder="House no, Street, Area, City, Pincode..." style="min-height:95px;"><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
+                        <a href="profile.php?shop=<?= rawurlencode($slug) ?>&tab=addresses" style="font-size:13px;display:inline-block;margin-top:8px">Manage addresses</a>
                     </div>
                 </div>
             </div>

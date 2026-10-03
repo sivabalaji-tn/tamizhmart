@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 $pid  = (int)($_GET['id'] ?? 0);
@@ -247,6 +249,12 @@ require_once 'includes/product_image.php';
                 <?php endif; ?>
                 <?php endif; ?>
 
+                <?php if (!empty($_SESSION['user_id'])): ?>
+                <form method="post" action="profile.php?shop=<?= rawurlencode($slug) ?>&tab=wishlist" style="margin-top:18px">
+                    <?php caFields('wishlist_add'); ?><input type="hidden" name="product_id" value="<?= (int)$pid ?>">
+                    <button class="btn-shop-outline"><i class="bi bi-heart"></i> Save to wishlist</button>
+                </form>
+                <?php else: ?><a href="../auth/login.php?shop=<?= rawurlencode($slug) ?>" class="btn-shop-outline" style="margin-top:18px"><i class="bi bi-heart"></i> Sign in to save</a><?php endif; ?>
                 <!-- Meta info -->
                 <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;">
                     <div style="display:flex;gap:10px;font-size:13.5px;color:var(--text-muted);">

@@ -26,7 +26,7 @@ function odCounts(mysqli $conn, int $shopId): array
 {
     $counts = [];
     $tables = odTables($conn);
-    foreach (['products','categories','orders','users','cart','coupons','popups','email_campaigns','email_campaign_allowances','shop_handlers','shop_settings','shop_subscriptions','commission_log','commission_collections','handler_activity_log','handler_cod_settlements','password_resets'] as $table) {
+    foreach (['products','categories','orders','users','cart','coupons','popups','email_campaigns','email_campaign_allowances','shop_handlers','shop_settings','shop_subscriptions','commission_log','commission_collections','handler_activity_log','handler_cod_settlements','password_resets','customer_accounts','customer_addresses','customer_wishlist','customer_support','customer_support_messages'] as $table) {
         $counts[$table] = in_array($table, $tables, true) ? (int)odQuery($conn, "SELECT COUNT(*) FROM `$table` WHERE shop_id=?", [$shopId])->get_result()->fetch_row()[0] : 0;
     }
     return $counts;
@@ -34,13 +34,14 @@ function odCounts(mysqli $conn, int $shopId): array
 
 function odDelete(mysqli $conn, string $table, int $shopId, array $tables): void
 {
-    $allowed = ['cart','categories','commission_collections','commission_log','coupons','email_campaigns','email_campaign_allowances','handler_activity_log','handler_cod_settlements','orders','password_resets','popups','products','shop_handlers','shop_settings','shop_subscriptions','users'];
+    $allowed = ['cart','categories','commission_collections','commission_log','coupons','email_campaigns','email_campaign_allowances','handler_activity_log','handler_cod_settlements','orders','password_resets','popups','products','shop_handlers','shop_settings','shop_subscriptions','users','customer_accounts','customer_addresses','customer_wishlist','customer_support','customer_support_messages'];
     if (!in_array($table, $allowed, true)) throw new LogicException('Unsupported cleanup table.');
     if (in_array($table, $tables, true)) odQuery($conn, "DELETE FROM `$table` WHERE shop_id=?", [$shopId]);
 }
 
 function odClearOrders(mysqli $conn, int $shopId, array $tables): void
 {
+    if (in_array('customer_support',$tables,true)) odQuery($conn,'UPDATE customer_support SET order_id=NULL WHERE shop_id=?',[$shopId]);
     foreach (['delivery_otps','order_items'] as $table) {
         if (in_array($table, $tables, true)) odQuery($conn, "DELETE d FROM `$table` d JOIN orders o ON o.id=d.order_id WHERE o.shop_id=?", [$shopId]);
     }
@@ -78,6 +79,7 @@ function odClearCatalogue(mysqli $conn, int $shopId, array $tables): void
     if ((int)odQuery($conn, 'SELECT COUNT(*) FROM orders WHERE shop_id=?', [$shopId])->get_result()->fetch_row()[0]) throw new InvalidArgumentException('Clear orders before deleting the catalogue, or use the full shop reset.');
     if (in_array('email_campaign_products', $tables, true)) odQuery($conn, 'DELETE d FROM email_campaign_products d JOIN products p ON p.id=d.product_id WHERE p.shop_id=?', [$shopId]);
     odDelete($conn, 'cart', $shopId, $tables);
+    odDelete($conn, 'customer_wishlist', $shopId, $tables);
     odDelete($conn, 'products', $shopId, $tables);
     odDelete($conn, 'categories', $shopId, $tables);
 }
@@ -86,7 +88,7 @@ function odClearCustomers(mysqli $conn, int $shopId, array $tables): void
 {
     if ((int)odQuery($conn, 'SELECT COUNT(*) FROM orders WHERE shop_id=?', [$shopId])->get_result()->fetch_row()[0]) throw new InvalidArgumentException('Clear orders before deleting customers, or use the full shop reset.');
     if (in_array('email_campaign_recipients', $tables, true)) odQuery($conn, 'DELETE d FROM email_campaign_recipients d JOIN users u ON u.id=d.user_id WHERE u.shop_id=?', [$shopId]);
-    foreach (['cart','password_resets','users'] as $table) odDelete($conn, $table, $shopId, $tables);
+    foreach (['cart','password_resets','customer_support_messages','customer_support','customer_wishlist','customer_addresses','customer_accounts','users'] as $table) odDelete($conn, $table, $shopId, $tables);
 }
 
 function odProductScope(mysqli $conn, int $shopId, array $post): array

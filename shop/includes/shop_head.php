@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/customer_account.php';
+caValidateSession($conn);
 // shop/includes/shop_head.php
 // Requires: $shop array, $conn, session started
 // ── This script is made by Siva Balaji sms ──────────────────────
@@ -1486,6 +1488,10 @@ if (isset($product) && !empty($product['image'])) {
 
         /* ─── Responsive ─── */
         @media (max-width: 768px) {
+            .navbar-inner { gap:10px; padding-inline:16px; }
+            .nav-brand { flex:1; min-width:0; }
+            .nav-brand-logo { flex-shrink:0; }
+            .nav-brand-name { min-width:0; font-family:inherit; font-size:14px; line-height:1.3; letter-spacing:0; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
             .nav-links, .nav-search { display: none; }
             .mobile-nav-btn { display: flex; }
             .mobile-bottom-nav { display: block; }
@@ -1552,7 +1558,7 @@ if (isset($product) && !empty($product['image'])) {
                 <?php endif; ?>
             </a>
             <div class="nav-user-btn" tabindex="0">
-                <div class="nav-user-avatar"><?= strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1)) ?></div>
+                <div class="nav-user-avatar"><?php if (!empty($GLOBALS['customer_nav_photo']['photo_updated']) && (int)$GLOBALS['customer_nav_photo']['shop_id']===(int)$shop['id']): ?><img src="account_photo.php?shop=<?= rawurlencode($slug) ?>&v=<?= strtotime($GLOBALS['customer_nav_photo']['photo_updated']) ?>" alt="Your profile photo" style="width:100%;height:100%;border-radius:50%;object-fit:cover"><?php else: ?><?= htmlspecialchars(mb_strtoupper(mb_substr($_SESSION['user_name'] ?? 'U', 0, 1))) ?><?php endif; ?></div>
                 <span class="user-name"><?= htmlspecialchars(explode(' ', $_SESSION['user_name'] ?? 'User')[0]) ?></span>
                 <i class="bi bi-chevron-down" style="font-size:11px;color:var(--text-muted);"></i>
                 <div class="user-dropdown">

@@ -6,7 +6,9 @@
  * Commission note: This only calculates discount. Commission is always on subtotal.
  */
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 header('Content-Type: application/json');
 
 function fail(string $msg): void {
@@ -18,6 +20,7 @@ if (empty($_SESSION['user_id'])) fail('Please log in to apply a coupon.');
 
 $d        = json_decode(file_get_contents('php://input'), true);
 $shop_id  = (int)($d['shop_id']  ?? 0);
+if (!caQuery($conn,'SELECT id FROM users WHERE id=? AND shop_id=? AND is_active=1',[$_SESSION['user_id'],$shop_id])->get_result()->num_rows) fail('Sign in to this shop first.');
 $code     = strtoupper(trim($d['code'] ?? ''));
 $subtotal = floatval($d['subtotal'] ?? 0);
 

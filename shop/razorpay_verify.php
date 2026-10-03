@@ -9,7 +9,9 @@
  * This ensures superadmin earnings are never reduced by customer coupon discounts.
  */
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 header('Content-Type: application/json');
 
 function fail($msg) {
@@ -25,6 +27,7 @@ $rz_oid      = trim($d['razorpay_order_id']   ?? '');
 $rz_pid      = trim($d['razorpay_payment_id'] ?? '');
 $rz_sig      = trim($d['razorpay_signature']  ?? '');
 $shop_id     = (int)($d['shop_id']    ?? 0);
+if (!caQuery($conn,'SELECT id FROM users WHERE id=? AND shop_id=? AND is_active=1',[$_SESSION['user_id'],$shop_id])->get_result()->num_rows) fail('Sign in to this shop first.');
 $address     = trim($d['address']     ?? '');
 $notes       = trim($d['notes']       ?? '');
 $subtotal    = floatval($d['amount']  ?? 0);   // pre-discount cart total from client

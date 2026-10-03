@@ -1,264 +1,132 @@
 <?php
 session_start();
-require '../config/db.php';
-// ── This script is made by Siva Balaji sms ──────────────────────
-$slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
-if (!$slug) { header("Location: ../index.php"); exit; }
-$stmt = $conn->prepare("SELECT * FROM shops WHERE slug=? AND is_active=1");
-$stmt->bind_param("s", $slug);
-$stmt->execute();
-$shop = $stmt->get_result()->fetch_assoc();
-if (!$shop) die('Shop not found.');
-$_SESSION['current_shop_slug'] = $slug;
-$shop_id = $shop['id'];
-
-$settings_map = [];
-$sr = $conn->query("SELECT setting_key,setting_value FROM shop_settings WHERE shop_id=$shop_id");
-while ($r = $sr->fetch_assoc()) $settings_map[$r['setting_key']] = $r['setting_value'];
-
-
-$user_id = $_SESSION['user_id'];
-$user    = $conn->query("SELECT * FROM users WHERE id=$user_id")->fetch_assoc();
-
-$success = $error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-
-    if ($action === 'update_profile') {
-        $name    = trim($_POST['name']);
-        $phone   = trim($_POST['phone']);
-        $address = trim($_POST['address']);
-        if (empty($name)) { $error = 'Name cannot be empty.'; }
-        else {
-            $stmt = $conn->prepare("UPDATE users SET name=?, phone=?, address=? WHERE id=? AND shop_id=?");
-            $stmt->bind_param("sssii", $name, $phone, $address, $user_id, $shop_id);
-            $stmt->execute();
-            $_SESSION['user_name'] = $name;
-            $success = 'Profile updated successfully.';
-            $user['name'] = $name; $user['phone'] = $phone; $user['address'] = $address;
-        }
-
-    } elseif ($action === 'change_password') {
-        $current = $_POST['current_password'];
-        $new_pw  = $_POST['new_password'];
-        $confirm = $_POST['confirm_password'];
-
-        if (!password_verify($current, $user['password'])) {
-            $error = 'Current password is incorrect.';
-        } elseif (strlen($new_pw) < 6) {
-            $error = 'New password must be at least 6 characters.';
-        } elseif ($new_pw !== $confirm) {
-            $error = 'New passwords do not match.';
-        } else {
-            $hashed = password_hash($new_pw, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE users SET password=? WHERE id=?");
-            $stmt->bind_param("si", $hashed, $user_id);
-            $stmt->execute();
-            $success = 'Password changed successfully.';
-        }
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+require_once __DIR__.'/includes/product_image.php';
+$slug=$_GET['shop']??$_SESSION['current_shop_slug']??'';
+$shop=caQuery($conn,'SELECT * FROM shops WHERE slug=? AND is_active=1',[$slug])->get_result()->fetch_assoc();
+if (!$shop) { http_response_code(404); exit('Shop not found.'); }
+$user=caRequireCustomer($conn,$shop);
+$shop_id=(int)$shop['id']; $user_id=(int)$user['id'];
+$_SESSION['current_shop_slug']=$shop['slug'];
+header('Cache-Control: no-store');
+caEnsure($conn); $account=caAccount($conn,$user_id,$shop_id);
+$tabs=['overview'=>['grid','Overview'],'details'=>['person','Personal details'],'addresses'=>['geo-alt','Addresses'],'orders'=>['bag-check','Orders & tracking'],'wishlist'=>['heart','Wishlist'],'preferences'=>['envelope','Email preferences'],'security'=>['shield-lock','Security'],'receipts'=>['receipt','Receipts'],'support'=>['chat-left-text','Support & returns']];
+$tab=is_string($_GET['tab']??null)&&isset($tabs[$_GET['tab']])?$_GET['tab']:'overview';
+$base='profile.php?shop='.rawurlencode($shop['slug']);
+if ($_SERVER['REQUEST_METHOD']==='POST') {
+    try { $_SESSION['account_flash']=['success',caAction($conn,$user,$shop,$_POST,$_FILES)]; }
+    catch (InvalidArgumentException $e) { $_SESSION['account_flash']=['error',$e->getMessage()]; }
+    catch (Throwable $e) { error_log('Customer account action failed: '.$e->getCode()); $_SESSION['account_flash']=['error','Unable to complete this action. Please try again.']; }
+    $target=$base.'&tab='.$tab;
+    if ($tab==='support' && isset($_GET['ticket'])) $target.='&ticket='.(int)$_GET['ticket'];
+    header('Location: '.$target,true,303); exit;
+}
+$flash=$_SESSION['account_flash']??null; unset($_SESSION['account_flash']);
+$settings_map=[];
+foreach (caQuery($conn,'SELECT setting_key,setting_value FROM shop_settings WHERE shop_id=?',[$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC) as $r) $settings_map[$r['setting_key']]=$r['setting_value'];
+$stats=caQuery($conn,"SELECT COUNT(*) AS orders,COALESCE(SUM(CASE WHEN payment_status='paid' AND status<>'cancelled' THEN total_amount ELSE 0 END),0) AS spent,COALESCE(SUM(status NOT IN ('delivered','cancelled')),0) AS active FROM orders WHERE user_id=? AND shop_id=?",[$user_id,$shop_id])->get_result()->fetch_assoc();
+$addresses=caQuery($conn,'SELECT * FROM customer_addresses WHERE user_id=? AND shop_id=? ORDER BY is_default DESC,id DESC',[$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC);
+$wishCount=(int)caQuery($conn,'SELECT COUNT(*) FROM customer_wishlist WHERE user_id=? AND shop_id=?',[$user_id,$shop_id])->get_result()->fetch_row()[0];
+$page=max(1,min(100000,(int)($_GET['page']??1))); $limit=$tab==='overview'?3:10; $offset=($page-1)*$limit;
+$orders=[]; $orderItems=[];
+if (in_array($tab,['overview','orders','receipts'],true)) {
+    $orders=caQuery($conn,"SELECT * FROM orders WHERE user_id=? AND shop_id=? ORDER BY id DESC LIMIT $limit OFFSET $offset",[$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC);
+    if ($orders) {
+        $ids=implode(',',array_map('intval',array_column($orders,'id')));
+        $rows=caQuery($conn,"SELECT oi.*,p.name,p.image,p.image_url,p.is_active FROM order_items oi JOIN orders o ON o.id=oi.order_id LEFT JOIN products p ON p.id=oi.product_id AND p.shop_id=o.shop_id WHERE o.id IN ($ids) AND o.user_id=? AND o.shop_id=?",[$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC);
+        foreach ($rows as $row) $orderItems[$row['order_id']][]=$row;
     }
 }
-
-// Stats
-$total_orders   = $conn->query("SELECT COUNT(*) as c FROM orders WHERE user_id=$user_id AND shop_id=$shop_id")->fetch_assoc()['c'];
-$total_spent    = $conn->query("SELECT COALESCE(SUM(total_amount),0) as t FROM orders WHERE user_id=$user_id AND shop_id=$shop_id AND status!='cancelled'")->fetch_assoc()['t'];
-$pending_orders = $conn->query("SELECT COUNT(*) as c FROM orders WHERE user_id=$user_id AND shop_id=$shop_id AND status='pending'")->fetch_assoc()['c'];
-
-$page_title = 'My Profile';
+$page_title='My Account';
 require 'includes/shop_head.php';
-requireCustomerLogin($shop);
+function accountInput(string $name,string $label,$value='',string $type='text',bool $required=true,int $max=200): void { ?>
+<label class="ac-field"><?= caEscape($label) ?><input class="input-shop" type="<?= $type ?>" name="<?= $name ?>" value="<?= caEscape($value) ?>" maxlength="<?= $max ?>" <?= $required?'required':'' ?> <?= $type==='password'?'autocomplete="'.($name==='current_password'?'current-password':'new-password').'"':'' ?>></label>
+<?php }
 ?>
-
 <style>
-.profile-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 24px;
-    padding: 32px 0 60px;
-    align-items: start;
-}
-.profile-sidebar-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 32px 24px;
-    text-align: center;
-    position: sticky;
-    top: calc(var(--navbar-h) + 20px);
-}
-.profile-avatar {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Syne', sans-serif;
-    font-weight: 800; font-size: 32px; color: #fff;
-    margin: 0 auto 16px;
-    box-shadow: 0 8px 24px var(--primary-glow);
-}
-.profile-user-name {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800; font-size: 20px; letter-spacing: -0.4px;
-    margin-bottom: 4px;
-}
-.profile-email { font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px; }
-
-.profile-stat {
-    padding: 12px 16px;
-    background: color-mix(in srgb, var(--text) 4%, var(--bg));
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    margin-bottom: 10px;
-    display: flex; align-items: center; justify-content: space-between;
-}
-.profile-stat-label { font-size: 13px; color: var(--text-muted); }
-.profile-stat-val { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--primary); }
-
-.profile-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 28px;
-    margin-bottom: 16px;
-}
-.profile-section-title {
-    font-family: 'Syne', sans-serif;
-    font-weight: 700; font-size: 16px; margin-bottom: 20px;
-    display: flex; align-items: center; gap: 10px;
-}
-.profile-section-title i { color: var(--primary); font-size: 18px; }
-
-.form-label-prof { font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-bottom: 7px; }
-
-@media (max-width: 768px) {
-    .profile-layout { grid-template-columns: 1fr; }
-    .profile-sidebar-card { position: relative; top: 0; }
-}
+.account-shell { --text-muted:color-mix(in srgb,var(--text) 72%,var(--bg)); }
+.ac-main a:not([class]),.ac-main .ac-field a { color:var(--primary); }
+.account-shell{max-width:1200px;margin:32px auto 64px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px;letter-spacing:0}.account-shell *{letter-spacing:0}.ac-nav{position:sticky;top:calc(var(--navbar-h) + 20px);align-self:start;min-width:0}.ac-identity{display:flex;align-items:center;gap:12px;padding:0 0 22px;border-bottom:1px solid var(--border);margin-bottom:14px}.ac-avatar{width:56px;height:56px;flex-shrink:0;aspect-ratio:1;border-radius:50%;object-fit:cover;background:var(--primary-light);color:var(--text);display:grid;place-items:center;font-weight:700;font-size:22px;border:1px solid var(--border)}.ac-avatar.large{width:96px;height:96px;font-size:32px}.ac-identity div{min-width:0}.ac-identity strong,.ac-identity small{display:block;overflow-wrap:anywhere}.ac-identity small{font-size:12px;color:var(--text-muted);margin-top:4px}
+.ac-links{display:grid;gap:4px}.ac-links a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text-muted);padding:11px 12px;border-radius:4px;font-size:13px;min-height:44px}.ac-links a.active{background:var(--primary-light);color:var(--text);font-weight:650;box-shadow:inset 3px 0 var(--primary)}.ac-links a:hover{color:var(--text);background:var(--primary-light)}.ac-main{min-width:0}.ac-heading{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:24px}.ac-heading h1{font-family:inherit;font-size:26px;font-weight:700;margin:0}.ac-heading p{font-size:13px;color:var(--text-muted);margin:7px 0 0}.ac-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid var(--border);margin-bottom:28px;padding:18px 0;gap:18px}.ac-stats span{display:block;font-size:12px;color:var(--text-muted)}.ac-stats strong{display:block;font-size:23px;font-weight:650;margin-top:6px;overflow-wrap:anywhere}
+.ac-section{padding:22px 0;border-top:1px solid var(--border)}.ac-section h2,.ac-section h3{font-family:inherit;font-weight:650;font-size:16px;margin:0 0 18px}.ac-section h3{font-size:14px}.ac-muted{color:var(--text-muted);font-size:13px;line-height:1.7;overflow-wrap:anywhere}.ac-field{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:500;min-width:0;margin:0}.ac-field input,.ac-field select,.ac-field textarea{width:100%;min-width:0;font-size:14px;min-height:44px;border-radius:4px}.ac-field textarea{min-height:110px;resize:vertical}.ac-form{display:grid;gap:18px;max-width:640px}.ac-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.ac-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}.ac-actions form{margin:0}.account-shell button,.account-shell .btn-shop-outline,.account-shell .btn-shop-primary{min-height:44px;font-size:13px;border-radius:4px;white-space:normal;text-align:center;justify-content:center}.ac-icon{border:1px solid var(--border);color:var(--text);background:var(--card-bg);width:44px;height:44px;display:inline-grid;place-items:center}.ac-check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.6}.ac-check input{width:18px;height:18px;flex-shrink:0;accent-color:var(--primary);margin-top:3px}
+.ac-message{padding:14px 16px;border:1px solid #abd7c1;background:#eef9f3;color:#215d41;border-radius:4px;margin-bottom:20px;font-size:14px}.ac-message.error{border-color:#e5b6b6;background:#fff2f2;color:#972d2d}.ac-empty{padding:38px 0;text-align:center;color:var(--text-muted);font-size:14px}.ac-empty i{display:block;font-size:28px;margin-bottom:12px}.ac-order{padding:20px 0;border-bottom:1px solid var(--border)}.ac-order-head{display:flex;align-items:start;justify-content:space-between;gap:16px}.ac-order-head strong{font-size:15px}.ac-order-head small{display:block;color:var(--text-muted);margin-top:5px;font-size:12px}.ac-badge{display:inline-block;border:1px solid var(--border);padding:3px 8px;border-radius:4px;font-size:11px;line-height:1.7;text-transform:capitalize;background:var(--card-bg)}.ac-badge.delivered,.ac-badge.resolved{background:#ecf8f1;color:#22603f;border-color:#b9ddc8}.ac-badge.cancelled,.ac-badge.rejected{background:#fff0f0;color:#9a3636;border-color:#eac6c6}
+.ac-item{display:flex;align-items:center;gap:12px;padding:10px 0}.ac-item img,.ac-thumb{width:52px;height:52px;aspect-ratio:1;object-fit:contain;border:1px solid var(--border);border-radius:4px;flex-shrink:0}.ac-thumb{display:grid;place-items:center;background:var(--card-bg);color:var(--text-muted)}.ac-item>div{min-width:0;flex:1}.ac-item strong{display:block;font-size:13px;overflow-wrap:anywhere}.ac-item small{font-size:12px;color:var(--text-muted)}.ac-item>span{font-size:13px}.ac-progress{display:flex;list-style:none;padding:0;margin:20px 0;gap:5px}.ac-progress li{flex:1;min-width:0;border-top:3px solid var(--border);padding-top:8px;font-size:10px;color:var(--text-muted);overflow-wrap:anywhere}.ac-progress li.done{border-color:var(--primary);color:var(--text);font-weight:600}
+.ac-card{padding:18px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);min-width:0}.ac-card p{font-size:13px;line-height:1.8;overflow-wrap:anywhere;margin:10px 0}.ac-card h3{font-size:15px;font-family:inherit;margin:0}.ac-wishlist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.ac-wishlist img,.ac-wishlist .ac-placeholder{width:100%;height:160px;object-fit:contain;display:grid;place-items:center;color:var(--text-muted);margin-bottom:14px;font-size:36px}.ac-wishlist a{color:var(--text);text-decoration:none}.ac-wishlist .ac-actions{justify-content:space-between}.ac-pagination{display:flex;gap:14px;align-items:center;justify-content:center;margin:24px 0;font-size:13px}.ac-ticket{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--border);padding:17px 0;color:var(--text);text-decoration:none}.ac-ticket strong{display:block;font-size:14px}.ac-ticket small{color:var(--text-muted);font-size:12px}.ac-conversation{max-height:480px;overflow-y:auto;padding-right:8px}.ac-post{border-left:3px solid var(--border);padding:12px 16px;margin:14px 0}.ac-post.owner{border-color:var(--primary);background:var(--primary-light)}.ac-post p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7;margin:8px 0 0}.ac-post small{color:var(--text-muted);font-size:12px}.ac-photo-row{display:flex;gap:22px;align-items:center;flex-wrap:wrap}.ac-photo-row .ac-form{flex:1;min-width:180px}.account-shell :focus-visible{outline:2px solid var(--primary);outline-offset:3px}.account-shell summary{cursor:pointer;font-size:13px;min-height:44px;padding-top:12px}.account-shell a{overflow-wrap:anywhere}.account-shell [hidden]{display:none!important}
+@media(max-width:900px){.account-shell{grid-template-columns:minmax(0,1fr);gap:20px;margin-top:22px}.ac-nav{position:static}.ac-identity{padding-bottom:14px}.ac-links{display:flex;overflow-x:auto;gap:6px;padding-bottom:8px;border-bottom:1px solid var(--border)}.ac-links a{flex-shrink:0;white-space:nowrap}.ac-links a.active{box-shadow:inset 0 -2px var(--primary)}.ac-heading h1{font-size:24px}}
+@media(max-width:560px){.ac-grid{grid-template-columns:minmax(0,1fr)}.ac-wishlist{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ac-wishlist .ac-card{padding:12px}.ac-wishlist img,.ac-wishlist .ac-placeholder{height:120px}.ac-wishlist .ac-actions{align-items:stretch}.ac-wishlist .ac-actions form:first-child{flex:1}.ac-wishlist .ac-actions .btn-shop-primary{width:100%;padding:10px}.ac-field input,.ac-field select,.ac-field textarea{font-size:16px}.ac-stats{gap:10px}.ac-stats strong{font-size:20px}.ac-heading{align-items:start}.ac-heading>a{padding:10px;font-size:12px}.ac-progress li{font-size:9px}.ac-item>span{max-width:80px}.ac-order-head{flex-wrap:wrap}.account-shell{margin-bottom:40px}}
 </style>
-
-<div class="shop-container">
-<div class="profile-layout">
-
-    <!-- Sidebar -->
-    <div>
-        <div class="profile-sidebar-card fade-up">
-            <div class="profile-avatar"><?= strtoupper(substr($user['name'], 0, 1)) ?></div>
-            <div class="profile-user-name"><?= htmlspecialchars($user['name']) ?></div>
-            <div class="profile-email"><?= htmlspecialchars($user['email']) ?></div>
-
-            <div style="margin-bottom:16px;">
-                <div class="profile-stat">
-                    <span class="profile-stat-label"><i class="bi bi-bag me-1"></i>Total Orders</span>
-                    <span class="profile-stat-val"><?= $total_orders ?></span>
-                </div>
-                <div class="profile-stat">
-                    <span class="profile-stat-label"><i class="bi bi-currency-rupee me-1"></i>Total Spent</span>
-                    <span class="profile-stat-val">&#8377;<?= number_format($total_spent, 0) ?></span>
-                </div>
-                <?php if ($pending_orders > 0): ?>
-                <div class="profile-stat" style="border-color:color-mix(in srgb,var(--primary) 25%,transparent);background:var(--primary-light);">
-                    <span class="profile-stat-label"><i class="bi bi-clock me-1"></i>Pending</span>
-                    <span class="profile-stat-val"><?= $pending_orders ?></span>
-                </div>
-                <?php endif; ?>
-            </div>
-
-            <a href="orders.php?shop=<?= $slug ?>" class="btn-shop-outline" style="width:100%;justify-content:center;margin-bottom:8px;">
-                <i class="bi bi-bag-check"></i> View Orders
-            </a>
-            <a href="../auth/logout.php" class="btn-shop-ghost" style="width:100%;justify-content:center;color:#dc2626;">
-                <i class="bi bi-box-arrow-right"></i> Sign Out
-            </a>
-        </div>
-    </div>
-
-    <!-- Main -->
-    <div>
-        <?php if ($success): ?>
-        <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:var(--radius-sm);padding:14px 18px;display:flex;gap:10px;align-items:center;margin-bottom:16px;color:#16a34a;font-size:13.5px;" class="fade-up">
-            <i class="bi bi-check-circle-fill"></i><?= htmlspecialchars($success) ?>
-        </div>
-        <?php elseif ($error): ?>
-        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:14px 18px;display:flex;gap:10px;align-items:center;margin-bottom:16px;color:#dc2626;font-size:13.5px;" class="fade-up">
-            <i class="bi bi-exclamation-circle-fill"></i><?= htmlspecialchars($error) ?>
-        </div>
-        <?php endif; ?>
-
-        <!-- Profile Info -->
-        <div class="profile-card fade-up d1">
-            <div class="profile-section-title"><i class="bi bi-person-circle"></i> Personal Information</div>
-            <form method="POST">
-                <input type="hidden" name="action" value="update_profile">
-                <div style="display:grid;gap:14px;">
-                    <div>
-                        <div class="form-label-prof">Full Name *</div>
-                        <input type="text" name="name" class="input-shop" value="<?= htmlspecialchars($user['name']) ?>" required>
-                    </div>
-                    <div>
-                        <div class="form-label-prof">Email Address</div>
-                        <input type="email" class="input-shop" value="<?= htmlspecialchars($user['email']) ?>" readonly style="background:color-mix(in srgb,var(--text) 4%,var(--bg));cursor:not-allowed;" title="Email cannot be changed">
-                    </div>
-                    <div>
-                        <div class="form-label-prof">Phone Number</div>
-                        <input type="tel" name="phone" class="input-shop" placeholder="+91 00000 00000" value="<?= htmlspecialchars($user['phone'] ?? '') ?>">
-                    </div>
-                    <div>
-                        <div class="form-label-prof">Default Delivery Address</div>
-                        <textarea name="address" class="input-shop" placeholder="Your delivery address..."><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
-                    </div>
-                </div>
-                <button type="submit" class="btn-shop-primary" style="margin-top:20px;">
-                    <i class="bi bi-check-lg"></i> Save Changes
-                </button>
-            </form>
-        </div>
-
-        <!-- Change Password -->
-        <div class="profile-card fade-up d2">
-            <div class="profile-section-title"><i class="bi bi-shield-lock"></i> Change Password</div>
-            <form method="POST">
-                <input type="hidden" name="action" value="change_password">
-                <div style="display:grid;gap:14px;">
-                    <div>
-                        <div class="form-label-prof">Current Password</div>
-                        <div style="position:relative;">
-                            <input type="password" name="current_password" class="input-shop" placeholder="Enter current password" required id="cp1">
-                            <button type="button" onclick="togglePw('cp1','e1')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'"><i class="bi bi-eye" id="e1"></i></button>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="form-label-prof">New Password</div>
-                        <div style="position:relative;">
-                            <input type="password" name="new_password" class="input-shop" placeholder="At least 6 characters" required id="cp2">
-                            <button type="button" onclick="togglePw('cp2','e2')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'"><i class="bi bi-eye" id="e2"></i></button>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="form-label-prof">Confirm New Password</div>
-                        <input type="password" name="confirm_password" class="input-shop" placeholder="Repeat new password" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn-shop-outline" style="margin-top:20px;">
-                    <i class="bi bi-lock"></i> Change Password
-                </button>
-            </form>
-        </div>
-
-    </div>
-</div>
-</div>
-
-<?php
-$extra_js = '
+<div class="shop-container"><div class="account-shell">
+<aside class="ac-nav"><div class="ac-identity">
+<?php if ($account['photo_updated']): ?><img class="ac-avatar" src="account_photo.php?shop=<?= rawurlencode($slug) ?>&v=<?= strtotime($account['photo_updated']) ?>" alt="Your profile photo"><?php else: ?><span class="ac-avatar"><?= caEscape(mb_strtoupper(mb_substr($user['name'],0,1))) ?></span><?php endif; ?>
+<div><strong><?= caEscape($user['name']) ?></strong><small><?= caEscape($shop['name']) ?></small></div></div>
+<nav class="ac-links" aria-label="My account"><?php foreach ($tabs as $key=>[$icon,$label]): ?><a href="<?= caEscape($base.'&tab='.$key) ?>" class="<?= $tab===$key?'active':'' ?>" <?= $tab===$key?'aria-current="page"':'' ?>><i class="bi bi-<?= $icon ?>" aria-hidden="true"></i><?= $label ?><?= $key==='wishlist'?' ('.$wishCount.')':'' ?></a><?php endforeach; ?></nav></aside>
+<div class="ac-main"><header class="ac-heading"><div><h1><?= $tabs[$tab][1] ?></h1><p><?= $tab==='overview'?'Welcome back, '.caEscape($user['name']).'.':caEscape($shop['name']).' / My account' ?></p></div><a class="btn-shop-outline" href="index.php?shop=<?= rawurlencode($slug) ?>"><i class="bi bi-arrow-left"></i> Shop</a></header>
+<?php if ($flash): ?><div class="ac-message <?= $flash[0]==='error'?'error':'' ?>" role="status"><?= caEscape($flash[1]) ?></div><?php endif; ?>
+<?php if ($tab==='overview'): ?>
+<div class="ac-stats"><div><span>Total orders</span><strong><?= (int)$stats['orders'] ?></strong></div><div><span>In progress</span><strong><?= (int)$stats['active'] ?></strong></div><div><span>Paid purchases</span><strong>&#8377;<?= number_format($stats['spent'],2) ?></strong></div></div>
+<div class="ac-grid"><section class="ac-section"><h2>Default delivery address</h2><p class="ac-muted"><?= $user['address']?nl2br(caEscape($user['address'])):'No delivery address saved.' ?></p><a href="<?= caEscape($base.'&tab=addresses') ?>">Manage addresses <i class="bi bi-arrow-right"></i></a></section><section class="ac-section"><h2>Account details</h2><p class="ac-muted"><?= caEscape($user['email']) ?><br><?= caEscape($user['phone']?:'No phone number added') ?><br>Member since <?= date('M Y',strtotime($user['created_at'])) ?></p><a href="<?= caEscape($base.'&tab=details') ?>">Edit details <i class="bi bi-arrow-right"></i></a></section></div>
+<?php endif; ?>
+<?php if (in_array($tab,['overview','orders','receipts'],true)): ?>
+<section class="ac-section"><h2><?= $tab==='overview'?'Recent orders':($tab==='receipts'?'Order receipts':'Your orders') ?></h2>
+<?php if (!$orders): ?><div class="ac-empty"><i class="bi bi-bag"></i>No orders yet.<div class="ac-actions" style="justify-content:center"><a class="btn-shop-primary" href="products.php?shop=<?= rawurlencode($slug) ?>">Browse products</a></div></div><?php endif; ?>
+<?php foreach ($orders as $o): ?><article class="ac-order"><div class="ac-order-head"><div><strong>Order #<?= caEscape($o['shop_order_number']?:$o['id']) ?></strong><small><?= date('d M Y, h:i A',strtotime($o['created_at'])) ?> &middot; <?= caEscape(strtoupper($o['payment_method'])) ?></small></div><div><strong>&#8377;<?= number_format($o['total_amount'],2) ?></strong> <span class="ac-badge <?= caEscape($o['status']) ?>"><?= caEscape(str_replace('_',' ',$o['status'])) ?></span><small>Payment: <?= caEscape($o['payment_status']) ?></small></div></div>
+<?php if ($tab!=='receipts'): ?>
+<?php if ($o['status']!=='cancelled'): $steps=['pending'=>'Placed','confirmed'=>'Confirmed','processing'=>'Preparing','out_for_delivery'=>'On the way','delivered'=>'Delivered']; $position=array_search($o['status'],array_keys($steps),true); ?><ol class="ac-progress" aria-label="Order progress"><?php $i=0;foreach ($steps as $status=>$label): ?><li class="<?= $i++<=$position?'done':'' ?>"><?= $label ?></li><?php endforeach; ?></ol><?php endif; ?>
+<details <?= $tab==='overview'?'':'open' ?>><summary>Items &amp; delivery details</summary><?php foreach ($orderItems[$o['id']]??[] as $item): ?><div class="ac-item"><?php if (hasProductImg($item)): ?><img loading="lazy" src="<?= getProductImgSrc($item) ?>" alt=""><?php else: ?><span class="ac-thumb"><i class="bi bi-box-seam"></i></span><?php endif; ?><div><strong><?= caEscape($item['name']??'Unavailable product') ?></strong><small>Quantity <?= (int)$item['quantity'] ?></small></div><span>&#8377;<?= number_format($item['price']*$item['quantity'],2) ?></span></div><?php endforeach; ?><p class="ac-muted"><?= nl2br(caEscape($o['address'])) ?></p></details>
+<?php endif; ?>
+<div class="ac-actions"><a class="btn-shop-outline" href="reciept.php?shop=<?= rawurlencode($slug) ?>&order_id=<?= (int)$o['id'] ?>"><i class="bi bi-file-earmark-pdf"></i> Receipt / PDF</a><form method="post"><?php caFields('buy_again'); ?><input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>"><button class="btn-shop-primary"><i class="bi bi-arrow-repeat"></i> Buy again</button></form><a class="btn-shop-outline" href="<?= caEscape($base.'&tab=support&order_id='.$o['id']) ?>"><i class="bi bi-chat-left-text"></i> Get help</a></div></article><?php endforeach; ?>
+<?php if ($tab==='overview' && $stats['orders']>3): ?><div class="ac-actions"><a href="<?= caEscape($base.'&tab=orders') ?>">View all orders <i class="bi bi-arrow-right"></i></a></div><?php elseif ($tab!=='overview' && $stats['orders']>10): ?><nav class="ac-pagination" aria-label="Order pages"><?php if ($page>1): ?><a href="<?= caEscape($base.'&tab='.$tab.'&page='.($page-1)) ?>">Previous</a><?php endif; ?><span>Page <?= $page ?></span><?php if ($offset+10<$stats['orders']): ?><a href="<?= caEscape($base.'&tab='.$tab.'&page='.($page+1)) ?>">Next</a><?php endif; ?></nav><?php endif; ?></section>
+<?php endif; ?>
+<?php if ($tab==='details'): ?>
+<section class="ac-section"><h2>Profile photo</h2><div class="ac-photo-row"><?php if ($account['photo_updated']): ?><img id="photo-preview" class="ac-avatar large" src="account_photo.php?shop=<?= rawurlencode($slug) ?>&v=<?= strtotime($account['photo_updated']) ?>" alt="Your profile photo"><?php else: ?><span id="photo-initial" class="ac-avatar large"><?= caEscape(mb_strtoupper(mb_substr($user['name'],0,1))) ?></span><img id="photo-preview" class="ac-avatar large" alt="Photo preview" hidden><?php endif; ?><form method="post" enctype="multipart/form-data" class="ac-form"><?php caFields('photo'); ?><label class="ac-field">Choose photo<input id="photo-file" type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label><small class="ac-muted">JPG, PNG or WebP. Maximum 5 MB. Square center crop.</small><button class="btn-shop-primary"><i class="bi bi-upload"></i> Update photo</button></form></div><?php if ($account['photo_updated']): ?><form method="post" class="ac-actions"><?php caFields('remove_photo'); ?><button class="btn-shop-outline"><i class="bi bi-trash"></i> Remove photo</button></form><?php endif; ?></section>
+<section class="ac-section"><h2>Personal information</h2><form method="post" class="ac-form"><?php caFields('profile'); accountInput('name','Full name',$user['name'],'text',true,100); accountInput('phone','Phone number',$user['phone'],'tel',false,25); ?><div class="ac-field">Email address<strong><?= caEscape($user['email']) ?></strong><a href="<?= caEscape($base.'&tab=security') ?>">Change email securely</a></div><button class="btn-shop-primary"><i class="bi bi-check-lg"></i> Save details</button></form></section>
+<?php endif; ?>
+<?php if ($tab==='addresses'): $edit=null; foreach ($addresses as $a) if ($a['id']==($_GET['edit']??0)) $edit=$a; ?>
+<div class="ac-grid"><?php foreach ($addresses as $a): ?><article class="ac-card"><h3><?= caEscape($a['label']) ?> <?= $a['is_default']?'<span class="ac-badge">Default</span>':'' ?></h3><p><?= nl2br(caEscape(caAddressText($a))) ?></p><div class="ac-actions"><a class="ac-icon" title="Edit address" aria-label="Edit address" href="<?= caEscape($base.'&tab=addresses&edit='.$a['id'].'#address-form') ?>"><i class="bi bi-pencil"></i></a><form method="post"><?php caFields('address_delete'); ?><input type="hidden" name="address_id" value="<?= $a['id'] ?>"><button class="ac-icon" title="Delete address" aria-label="Delete address"><i class="bi bi-trash"></i></button></form><?php if (!$a['is_default']): ?><form method="post"><?php caFields('address_default'); ?><input type="hidden" name="address_id" value="<?= $a['id'] ?>"><button class="btn-shop-outline">Make default</button></form><?php endif; ?></div></article><?php endforeach; ?></div>
+<?php if (!$addresses && $user['address']): ?><p class="ac-muted">Current delivery address: <?= nl2br(caEscape($user['address'])) ?></p><?php endif; ?>
+<section class="ac-section" id="address-form" style="margin-top:24px"><h2><?= $edit?'Edit address':'Add address' ?></h2><form method="post" class="ac-form"><?php caFields('address_save'); ?><input type="hidden" name="address_id" value="<?= (int)($edit['id']??0) ?>"><div class="ac-grid"><?php accountInput('label','Label (Home, Work...)',$edit['label']??'','text',true,40); accountInput('recipient','Recipient',$edit['recipient']??$user['name'],'text',true,100); accountInput('phone','Phone number',$edit['phone']??$user['phone'],'tel',true,25); accountInput('pincode','Pincode',$edit['pincode']??'','text',true,6); ?></div><?php accountInput('line1','House, street and area',$edit['line1']??''); accountInput('line2','Landmark / address line 2',$edit['line2']??'','text',false); ?><div class="ac-grid"><?php accountInput('city','City',$edit['city']??'','text',true,100); accountInput('state','State',$edit['state']??'','text',true,100); ?></div><label class="ac-check"><input type="checkbox" name="is_default" <?= ($edit['is_default']??!$addresses)?'checked':'' ?>>Default delivery address</label><button class="btn-shop-primary"><i class="bi bi-check-lg"></i> Save address</button></form></section>
+<?php endif; ?>
+<?php if ($tab==='wishlist'): $wishlist=caQuery($conn,"SELECT w.product_id,p.name,p.image,p.image_url,p.price,p.discount_price,p.stock,p.is_active FROM customer_wishlist w LEFT JOIN products p ON p.id=w.product_id AND p.shop_id=w.shop_id WHERE w.user_id=? AND w.shop_id=? ORDER BY w.created_at DESC LIMIT 24 OFFSET ".(($page-1)*24),[$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC); ?>
+<?php if (!$wishlist): ?><div class="ac-empty"><i class="bi bi-heart"></i>No saved products yet.<div class="ac-actions" style="justify-content:center"><a class="btn-shop-primary" href="products.php?shop=<?= rawurlencode($slug) ?>">Browse products</a></div></div><?php endif; ?>
+<div class="ac-wishlist"><?php foreach ($wishlist as $p): ?><article class="ac-card"><?php if (hasProductImg($p)): ?><img loading="lazy" src="<?= getProductImgSrc($p) ?>" alt="<?= caEscape($p['name']) ?>"><?php else: ?><span class="ac-placeholder"><i class="bi bi-box-seam"></i></span><?php endif; ?><h3><?php if ($p['is_active']): ?><a href="product.php?shop=<?= rawurlencode($slug) ?>&id=<?= (int)$p['product_id'] ?>"><?= caEscape($p['name']) ?></a><?php else: ?>Unavailable product<?php endif; ?></h3><p><?= $p['is_active']?'&#8377;'.number_format($p['discount_price']?:$p['price'],2):'No longer available' ?><br><small><?= $p['is_active']&&$p['stock']>0?'In stock':'Out of stock' ?></small></p><div class="ac-actions"><form method="post"><?php caFields('wishlist_cart'); ?><input type="hidden" name="product_id" value="<?= $p['product_id'] ?>"><button class="btn-shop-primary" <?= !$p['is_active']||$p['stock']<=0?'disabled':'' ?>><i class="bi bi-bag-plus"></i> Add</button></form><form method="post"><?php caFields('wishlist_remove'); ?><input type="hidden" name="product_id" value="<?= $p['product_id'] ?>"><button class="ac-icon" title="Remove from wishlist" aria-label="Remove from wishlist"><i class="bi bi-trash"></i></button></form></div></article><?php endforeach; ?></div>
+<?php if ($wishCount>24): ?><nav class="ac-pagination"><?php if ($page>1): ?><a href="<?= caEscape($base.'&tab=wishlist&page='.($page-1)) ?>">Previous</a><?php endif; ?><span>Page <?= $page ?></span><?php if ($page*24<$wishCount): ?><a href="<?= caEscape($base.'&tab=wishlist&page='.($page+1)) ?>">Next</a><?php endif; ?></nav><?php endif; ?>
+<?php endif; ?>
+<?php if ($tab==='preferences'): ?><section class="ac-section"><h2>Email from <?= caEscape($shop['name']) ?></h2><form method="post" class="ac-form"><?php caFields('preferences'); ?><label class="ac-check"><input type="checkbox" name="marketing_email" <?= $account['marketing_email']?'checked':'' ?>>Offers, product launches and promotional campaigns from this shop</label><p class="ac-muted">Order confirmations and essential account messages remain enabled. This preference applies only to <?= caEscape($shop['name']) ?>.</p><button class="btn-shop-primary"><i class="bi bi-check-lg"></i> Save preferences</button></form></section><?php endif; ?>
+<?php if ($tab==='security'): ?>
+<?php if (!$user['password']): ?><div class="ac-message">You sign in with Google. <a href="../auth/forgot_password.php?shop=<?= rawurlencode($slug) ?>">Set a password using email verification</a> before making security changes.</div><?php endif; ?>
+<section class="ac-section"><h2>Change password</h2><form method="post" class="ac-form"><?php caFields('password'); accountInput('current_password','Current password','','password'); accountInput('new_password','New password (at least 10 characters)','','password'); accountInput('confirm_password','Confirm new password','','password'); ?><label class="ac-check"><input type="checkbox" class="ac-show-password">Show passwords</label><button class="btn-shop-primary"><i class="bi bi-lock"></i> Update password</button></form></section>
+<section class="ac-section"><h2>Change email address</h2><p class="ac-muted">Current: <?= caEscape($user['email']) ?>. Updating your email disconnects Google sign-in; use your password afterward.</p><form method="post" class="ac-form"><?php caFields('email_request'); accountInput('new_email','New email address',$account['pending_email']??'','email',true,180); accountInput('current_password','Current password','','password'); ?><button class="btn-shop-outline"><i class="bi bi-envelope-check"></i> Send verification code</button></form><?php if ($account['pending_email']): ?><form method="post" class="ac-form" style="margin-top:24px"><?php caFields('email_verify'); accountInput('code','Six-digit code sent to '.$account['pending_email'],'','text',true,6); ?><button class="btn-shop-primary">Verify email</button></form><?php endif; ?></section>
+<section class="ac-section"><h2>Signed-in sessions</h2><p class="ac-muted">This session is active.<?= $account['password_changed']?' Password last changed '.caEscape($account['password_changed']).'.':'' ?></p><form method="post" class="ac-form"><?php caFields('signout_others'); accountInput('current_password','Current password','','password'); ?><button class="btn-shop-outline"><i class="bi bi-shield-lock"></i> Sign out other sessions</button></form><div class="ac-actions"><a class="btn-shop-outline" href="../auth/logout.php"><i class="bi bi-box-arrow-right"></i> Sign out this session</a></div></section>
+<?php endif; ?>
+<?php if ($tab==='support'): $tid=(int)($_GET['ticket']??0); $ticket=$tid?caQuery($conn,'SELECT * FROM customer_support WHERE id=? AND user_id=? AND shop_id=?',[$tid,$user_id,$shop_id])->get_result()->fetch_assoc():null; ?>
+<?php if ($ticket): ?><section class="ac-section"><h2>#<?= $ticket['id'] ?> &middot; <?= caEscape($ticket['subject']) ?></h2><span class="ac-badge <?= caEscape($ticket['status']) ?>"><?= caEscape(str_replace('_',' ',$ticket['status'])) ?></span><div class="ac-conversation"><?php $messages=caQuery($conn,'SELECT * FROM customer_support_messages WHERE ticket_id=? AND user_id=? AND shop_id=? ORDER BY id DESC LIMIT 100',[$tid,$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC); foreach (array_reverse($messages) as $m): ?><article class="ac-post <?= caEscape($m['author']) ?>"><strong><?= $m['author']==='owner'?'Shop team':'You' ?></strong> <small><?= caEscape($m['created_at']) ?></small><p><?= caEscape($m['message']) ?></p></article><?php endforeach; ?></div><?php if ($ticket['status']!=='closed'): ?><form method="post" class="ac-form"><?php caFields('support_reply'); ?><input type="hidden" name="ticket_id" value="<?= $tid ?>"><label class="ac-field">Your reply<textarea name="message" class="input-shop" maxlength="3000" required></textarea></label><button class="btn-shop-primary"><i class="bi bi-send"></i> Send reply</button></form><?php endif; ?><div class="ac-actions"><a href="<?= caEscape($base.'&tab=support') ?>">All requests</a></div></section>
+<?php else: $tickets=caQuery($conn,'SELECT * FROM customer_support WHERE user_id=? AND shop_id=? ORDER BY updated_at DESC LIMIT 20 OFFSET '.(($page-1)*20),[$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC); ?>
+<section class="ac-section"><h2>Your requests</h2><?php if (!$tickets): ?><p class="ac-muted">No support requests yet.</p><?php endif; ?><?php foreach ($tickets as $t): ?><a class="ac-ticket" href="<?= caEscape($base.'&tab=support&ticket='.$t['id']) ?>"><div><strong>#<?= $t['id'] ?> &middot; <?= caEscape($t['subject']) ?></strong><small><?= caEscape($t['created_at']) ?> &middot; <?= caEscape(str_replace('_',' ',$t['kind'])) ?></small></div><span class="ac-badge <?= caEscape($t['status']) ?>"><?= caEscape(str_replace('_',' ',$t['status'])) ?></span></a><?php endforeach; ?><nav class="ac-pagination"><?php if ($page>1): ?><a href="<?= caEscape($base.'&tab=support&page='.($page-1)) ?>">Previous</a><?php endif; ?><?php if (count($tickets)===20): ?><a href="<?= caEscape($base.'&tab=support&page='.($page+1)) ?>">More requests</a><?php endif; ?></nav></section>
+<section class="ac-section"><h2>New request</h2><form method="post" class="ac-form"><?php caFields('support_create'); ?><label class="ac-field">Request type<select name="kind" class="input-shop"><option value="question">General question</option><option value="order_issue">Order issue</option><option value="return">Return request</option></select></label><label class="ac-field">Order<select name="order_id" class="input-shop"><option value="0">Not related to an order</option><?php $supportOrders=caQuery($conn,'SELECT id,shop_order_number,status FROM orders WHERE user_id=? AND shop_id=? ORDER BY id DESC LIMIT 200',[$user_id,$shop_id])->get_result()->fetch_all(MYSQLI_ASSOC); foreach ($supportOrders as $o): ?><option value="<?= $o['id'] ?>" <?= $o['id']==($_GET['order_id']??0)?'selected':'' ?>>#<?= caEscape($o['shop_order_number']?:$o['id']) ?> &middot; <?= caEscape(str_replace('_',' ',$o['status'])) ?></option><?php endforeach; ?></select></label><?php accountInput('subject','Subject','','text',true,160); ?><label class="ac-field">Message<textarea class="input-shop" name="message" maxlength="3000" required></textarea></label><p class="ac-muted">Returns are reviewed by the shop. Submitting a request does not automatically issue a refund.</p><button class="btn-shop-primary"><i class="bi bi-send"></i> Submit request</button></form></section>
+<?php endif; endif; ?>
+</div></div></div>
 <script>
-function togglePw(inputId, iconId) {
-    const input = document.getElementById(inputId);
-    const icon  = document.getElementById(iconId);
-    input.type  = input.type === "password" ? "text" : "password";
-    icon.className = input.type === "password" ? "bi bi-eye" : "bi bi-eye-slash";
-}
-</script>';
-
-require 'includes/shop_foot.php';
-?>
+const accountNav=document.querySelector('.ac-links');
+const activeAccountTab=accountNav.querySelector('.active');
+if(accountNav.scrollWidth>accountNav.clientWidth)accountNav.scrollLeft=activeAccountTab.offsetLeft-accountNav.offsetLeft-(accountNav.clientWidth-activeAccountTab.offsetWidth)/2;
+document.querySelectorAll('.ac-show-password').forEach(toggle=>toggle.addEventListener('change',()=>toggle.closest('form').querySelectorAll('input[name*="password"]').forEach(input=>input.type=toggle.checked?'text':'password')));
+let photoUrl;
+document.getElementById('photo-file')?.addEventListener('change',async event=>{
+    const file=event.target.files[0];if(!file)return;
+    if(file.size>5*1024*1024 || !['image/jpeg','image/png','image/webp'].includes(file.type)){event.target.setCustomValidity('Choose a JPG, PNG or WebP under 5 MB.');event.target.reportValidity();return;}
+    event.target.setCustomValidity('');if(photoUrl)URL.revokeObjectURL(photoUrl);photoUrl=URL.createObjectURL(file);
+    const preview=document.getElementById('photo-preview');preview.src=photoUrl;preview.hidden=false;document.getElementById('photo-initial')?.remove();
+    const button=event.target.form.querySelector('button');button.disabled=true;
+    try {
+        const picture=await createImageBitmap(file,{imageOrientation:'from-image'});
+        const canvas=document.createElement('canvas');canvas.width=canvas.height=256;
+        const context=canvas.getContext('2d');context.fillStyle='#ffffff';context.fillRect(0,0,256,256);
+        const side=Math.min(picture.width,picture.height);context.drawImage(picture,(picture.width-side)/2,(picture.height-side)/2,side,side,0,0,256,256);picture.close();
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.9));
+        if(blob){const transfer=new DataTransfer();transfer.items.add(new File([blob],'profile.jpg',{type:'image/jpeg'}));event.target.files=transfer.files;}
+    } catch(error) { /* The server validates and resizes the original when browser conversion is unavailable. */ }
+    finally {button.disabled=false;}
+});
+</script>
+<?php require 'includes/shop_foot.php'; ?>

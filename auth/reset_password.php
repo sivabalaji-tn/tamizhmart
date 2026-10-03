@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/../shop/includes/customer_account.php';
+caValidateSession($conn);
 
 $shop_slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 $shop = null;
@@ -31,15 +33,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($pass1 !== $pass2) {
         $error = 'Passwords do not match.';
     } else {
-        $hash = password_hash($pass1, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ? AND shop_id = ?");
-        $stmt->bind_param('ssi', $hash, $email, $shop_id);
-        $stmt->execute();
-
-        // Clean session
-        unset($_SESSION['otp_verified_email'], $_SESSION['otp_verified_shop_id']);
-
-        $success = 'Password updated! Redirecting to login&hellip;';
+        try {
+            caEnsure($conn);
+            $conn->begin_transaction();
+            $hash = password_hash($pass1, PASSWORD_DEFAULT);
+            caQuery($conn,'UPDATE users SET password=? WHERE email=? AND shop_id=?',[$hash,$email,$shop_id]);
+            caQuery($conn,'INSERT IGNORE INTO customer_accounts(user_id,shop_id) SELECT id,shop_id FROM users WHERE email=? AND shop_id=?',[$email,$shop_id]);
+            caQuery($conn,'UPDATE customer_accounts a JOIN users u ON u.id=a.user_id AND u.shop_id=a.shop_id SET a.session_version=a.session_version+1,a.password_changed=NOW(),a.pending_email=NULL,a.email_code=NULL WHERE u.email=? AND u.shop_id=?',[$email,$shop_id]);
+            $conn->commit();
+            caClearCustomer();
+            unset($_SESSION['otp_verified_email'], $_SESSION['otp_verified_shop_id']);
+            $success = 'Password updated! Redirecting to login&hellip;';
+        } catch (Throwable $e) {
+            $conn->rollback();
+            error_log('Customer password reset failed: '.$e->getCode());
+            $error = 'Unable to update your password. Please try again.';
+        }
     }
 }
 

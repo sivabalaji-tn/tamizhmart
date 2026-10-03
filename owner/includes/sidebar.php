@@ -592,9 +592,10 @@ require_once __DIR__ . '/debug_access.php';
         <a href="customers.php" class="nav-item <?= $current_page === 'customers.php' ? 'active' : '' ?>">
             <i class="bi bi-people-fill"></i> Customers
         </a>
-        <a href="handlers.php" class="nav-item <?= $current_page === 'handlers.php' ? 'active' : '' ?>">
-            <i class="bi bi-person-badge-fill"></i> Staff Handlers
+        <a href="customer_support.php" class="nav-item <?= $current_page === 'customer_support.php' ? 'active' : '' ?>">
+            <i class="bi bi-chat-left-text"></i> Customer Support
         </a>
+
         <a href="export_orders.php?format=print" target="_blank" class="nav-item">
             <i class="bi bi-file-earmark-arrow-down-fill"></i> Export Orders
         </a>
@@ -642,6 +643,15 @@ require_once __DIR__ . '/debug_access.php';
         <a href="../shop/index.php?shop=<?= $shop['slug'] ?>" class="nav-item" target="_blank">
             <i class="bi bi-box-arrow-up-right"></i> View Live Shop
         </a>
+
+        <div class="nav-section-label">Staff Handling</div>
+        <a href="handlers.php" class="nav-item <?= $current_page === 'handlers.php' ? 'active' : '' ?>">
+            <i class="bi bi-person-badge-fill"></i> Staff Handlers
+        </a>
+        <a href="payroll.php" class="nav-item <?= $current_page ==='payroll.php' ? 'active' : '' ?>">
+            <i class="bi bi-cash-coin"></i> Staff Payroll
+        </a>
+
     </nav>
 
     <div class="sidebar-footer">

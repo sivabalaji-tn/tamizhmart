@@ -9,6 +9,8 @@ if (($argv[1] ?? '') === 'render') {
     $database = $argv[2] ?? '';
     if (!preg_match('/^tamizhmart_debug_test_[a-f0-9]{12}$/', $database)) exit(2);
     $conn->select_db($database);
+    // Simulate hosting without access to the SQL migration directory.
+    ini_set('open_basedir', implode(PATH_SEPARATOR, [realpath(__DIR__.'/../owner'), realpath(__DIR__.'/../config'), __DIR__, sys_get_temp_dir(), session_save_path() ?: sys_get_temp_dir()]));
     session_id('debug-preview-' . bin2hex(random_bytes(8)));
     session_start();
     $_SESSION = ['owner_id'=>1,'shop_id'=>1,'owner_name'=>'Test Owner'];
@@ -31,6 +33,12 @@ function debugReject(callable $callback, string $label): void {
     throw new RuntimeException('Expected rejection: ' . $label);
 }
 function debugValue(mysqli $conn, string $sql) { return $conn->query($sql)->fetch_row()[0]; }
+function debugRender(string $database): string {
+    $process=proc_open([PHP_BINARY,__FILE__,'render',$database],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
+    fclose($pipes[0]); $html=stream_get_contents($pipes[1]); fclose($pipes[1]); $errors=stream_get_contents($pipes[2]); fclose($pipes[2]);
+    if(proc_close($process)!==0 || preg_match('/Warning:|Fatal error|Notice:/',$html.$errors)) throw new RuntimeException('Fixture rendering failed: '.$errors);
+    return $html;
+}
 
 $source = DB_NAME;
 $database = 'tamizhmart_debug_test_' . bin2hex(random_bytes(6));
@@ -77,6 +85,10 @@ try {
     $conn->query("INSERT INTO plans(id,name,slug,price,duration_days,features) VALUES (1,'Test','test',0,30,'[]')");
     $conn->query("INSERT INTO shop_subscriptions(shop_id,plan_id,status,expires_at) VALUES (1,1,'trial',DATE_ADD(NOW(),INTERVAL 30 DAY)),(2,1,'trial',DATE_ADD(NOW(),INTERVAL 30 DAY))");
     $otherBefore=odCounts($conn,2);
+    putenv('APP_ENV=test'); putenv('OWNER_DEBUG_TOOLS=1');
+    $conn->query('DROP TABLE owner_debug_logs');
+    $initialHtml=debugRender($database);
+    debugCheck(in_array('owner_debug_logs',odTables($conn),true) && str_contains($initialHtml,'debug-workspace'),'Page creates debug history without access to migration files');
     putenv('APP_ENV=production'); putenv('OWNER_DEBUG_TOOLS=1');
     debugReject(fn()=>debugAction($conn,'stock_set',['quantity'=>100]),'Production blocks debug actions even if the tool flag is enabled');
     putenv('APP_ENV=test'); putenv('OWNER_DEBUG_TOOLS=0');
@@ -124,10 +136,7 @@ try {
     debugReject(fn()=>debugAction($conn,'reset_shop',['confirmation'=>'test-shop-1','password'=>'TestOwnerPassword!','acknowledge'=>1]),'Unknown shop-owned tables cannot silently escape a full reset');
     $conn->query('DROP TABLE future_shop_data');
     if (in_array('--render-fixture',$argv,true)) {
-        $process=proc_open([PHP_BINARY,__FILE__,'render',$database],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
-        fclose($pipes[0]); $html=stream_get_contents($pipes[1]); fclose($pipes[1]); $errors=stream_get_contents($pipes[2]); fclose($pipes[2]);
-        if(proc_close($process)!==0 || preg_match('/Warning:|Fatal error|Notice:/',$html.$errors)) throw new RuntimeException('Fixture rendering failed: '.$errors);
-        file_put_contents(sys_get_temp_dir().'/tamizhmart-debug-preview.html',$html);
+        file_put_contents(sys_get_temp_dir().'/tamizhmart-debug-preview.html',debugRender($database));
     }
     $result=debugAction($conn,'reset_shop',['confirmation'=>'test-shop-1','password'=>'TestOwnerPassword!','acknowledge'=>1,'remove_media'=>1]);
     $remaining=odCounts($conn,1);

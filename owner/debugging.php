@@ -10,7 +10,24 @@ $ownerId = (int)$_SESSION['owner_id'];
 $shopId = (int)$_SESSION['shop_id'];
 try { $debugShop = odShop($conn, $ownerId, $shopId); }
 catch (InvalidArgumentException $exception) { http_response_code(403); exit('This shop is unavailable.'); }
-$conn->query(file_get_contents(__DIR__ . '/../databasefile/add_owner_debug_logs.sql'));
+// Keep first-use setup self-contained when SQL migration files are not deployed.
+if (!in_array('owner_debug_logs', odTables($conn), true)) {
+    $conn->query(<<<'SQL'
+CREATE TABLE IF NOT EXISTS owner_debug_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    shop_id INT UNSIGNED NOT NULL,
+    owner_id INT UNSIGNED NOT NULL,
+    action VARCHAR(40) NOT NULL,
+    request_key CHAR(32) NOT NULL,
+    summary VARCHAR(500) NOT NULL,
+    details LONGTEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_debug_request (shop_id, request_key),
+    INDEX idx_debug_shop (shop_id, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+SQL
+    );
+}
 $_SESSION['owner_debug_csrf'] ??= bin2hex(random_bytes(32));
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {

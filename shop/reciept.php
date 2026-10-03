@@ -6,7 +6,9 @@
  */
 // ── This script is made by Siva Balaji sms ──────────────────────
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 if (!$slug) { header("Location: ../index.php"); exit; }
@@ -130,7 +132,8 @@ requireCustomerLogin($shop);
 .badge-cod  { background:rgba(99,102,241,0.1); color:var(--primary); border:1px solid rgba(99,102,241,0.2); }
 @media print {
     .no-print { display:none !important; }
-    body { background:#fff; }
+    body { background:#fff; padding:0!important; }
+    .shop-navbar,.announcement-bar,.mobile-bottom-nav,.mobile-menu,.shop-footer { display:none!important; }
     .receipt-wrap { max-width:100%; margin:0; }
 }
 </style>
@@ -141,18 +144,18 @@ requireCustomerLogin($shop);
     <!-- ── Header ── -->
     <div class="receipt-card">
         <div class="receipt-header">
-            <?php if ($is_online && $is_paid): ?>
+            <?php if ($is_paid): ?>
             <div class="receipt-status-icon icon-success">
                 <i class="bi bi-patch-check-fill"></i>
             </div>
-            <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;margin-bottom:6px;">Payment Successful!</h2>
-            <p style="color:var(--text-muted);font-size:14px;">Your payment has been confirmed and order is being processed.</p>
+            <h2 style="font-family:inherit;font-weight:700;font-size:24px;margin-bottom:6px;">Payment receipt</h2>
+            <p style="color:var(--text-muted);font-size:14px;">Payment received. Order status: <?= htmlspecialchars(str_replace('_',' ',$order['status'])) ?>.</p>
             <?php else: ?>
             <div class="receipt-status-icon icon-cod">
                 <i class="bi bi-bag-check-fill"></i>
             </div>
-            <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;margin-bottom:6px;">Order Placed!</h2>
-            <p style="color:var(--text-muted);font-size:14px;">Pay when your order arrives at your door.</p>
+            <h2 style="font-family:inherit;font-weight:700;font-size:24px;margin-bottom:6px;">Order summary</h2>
+            <p style="color:var(--text-muted);font-size:14px;">Payment <?= htmlspecialchars($order['payment_status']) ?>. Order <?= htmlspecialchars(str_replace('_',' ',$order['status'])) ?>. This is not a paid receipt.</p>
             <?php endif; ?>
 
             <!-- Order number pill -->
@@ -265,7 +268,7 @@ requireCustomerLogin($shop);
                     <i class="bi bi-list-ul"></i> View My Orders
                 </a>
                 <button onclick="window.print()" class="btn-shop-outline" style="width:100%;justify-content:center;padding:12px;cursor:pointer;border:none;">
-                    <i class="bi bi-printer"></i> Print Receipt
+                    <i class="bi bi-printer"></i> Print / Save as PDF
                 </button>
                 <a href="index.php?shop=<?= $slug ?>" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;font-size:13px;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
                     <i class="bi bi-arrow-left"></i> Continue Shopping

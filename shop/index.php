@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 // ── This script is made by Siva Balaji sms ──────────────────────
 
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;

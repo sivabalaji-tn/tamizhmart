@@ -2,6 +2,7 @@
 session_start();
 require_once '../config/db.php';
 require_once __DIR__ . '/includes/audit.php';
+require_once __DIR__.'/../shop/includes/customer_account.php';
 saAuditRequireAdmin();
 // ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'All Shops';
@@ -21,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn->query("UPDATE shops SET is_suspended=0, is_active=1 WHERE id=$shop_id");
             $success = "Shop reactivated.";
         } elseif ($action === 'delete') {
+            caDeleteShopData($conn,$shop_id);
             $conn->query("DELETE FROM shops WHERE id=$shop_id");
             $success = "Shop deleted permanently.";
         }

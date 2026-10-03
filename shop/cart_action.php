@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 // ── This script is made by Siva Balaji sms ──────────────────────
 header('Content-Type: application/json');
 
@@ -20,6 +22,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 $user_id = $_SESSION['user_id'];
+if (!caQuery($conn,'SELECT id FROM users WHERE id=? AND shop_id=? AND is_active=1',[$user_id,$shop_id])->get_result()->num_rows) {
+    http_response_code(403); echo json_encode(['success'=>false,'message'=>'Sign in to this shop first']); exit;
+}
 $action  = $_POST['action'] ?? '';
 
 function getCartCount($conn, $user_id, $shop_id) {

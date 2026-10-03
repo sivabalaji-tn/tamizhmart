@@ -2,6 +2,7 @@
 session_start();
 require_once '../config/db.php';
 require_once __DIR__ . '/includes/audit.php';
+require_once __DIR__.'/../shop/includes/customer_account.php';
 saAuditRequireAdmin();
 // ── This script is made by Siva Balaji sms ──────────────────────
 $page_title    = 'Shop Owners';
@@ -22,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn->query("UPDATE shops SET is_suspended=0, is_active=1 WHERE owner_id=$owner_id");
             $success = "Owner reactivated.";
         } elseif ($action === 'delete') {
+            $ownedShops=caQuery($conn,'SELECT id FROM shops WHERE owner_id=?',[$owner_id])->get_result()->fetch_all(MYSQLI_ASSOC);
+            foreach ($ownedShops as $ownedShop) caDeleteShopData($conn,(int)$ownedShop['id']);
             $conn->query("DELETE FROM owners WHERE id=$owner_id");
             $success = "Owner and all their data deleted.";
         }

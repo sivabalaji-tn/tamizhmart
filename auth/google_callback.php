@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/../shop/includes/customer_account.php';
+caValidateSession($conn);
 require '../config/google_oauth_config.php';
 
 function oauth_error(string $msg, int $code = 400) {
@@ -180,6 +182,8 @@ if ($source === 'login') {
 }
 
 // STEP 10: Start fresh secure session
+if (!caQuery($conn,'SELECT id FROM users WHERE id=? AND shop_id=? AND is_active=1',[$user['id'],$shop_id])->get_result()->num_rows) oauth_error('This account is unavailable.');
+caLogin($conn,(int)$user['id'],(int)$shop_id);
 session_regenerate_id(true);
 $_SESSION['user_id']           = $user['id'];
 $_SESSION['user_name']         = $user['name'];

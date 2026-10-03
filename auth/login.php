@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/../shop/includes/customer_account.php';
+caValidateSession($conn);
 require_once 'google_oauth_init.php';
 
 if (isset($_SESSION['user_id'])) {
@@ -28,13 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $shop) {
     $password = $_POST['password'];
     $shop_id  = $shop['id'];
 
-    $stmt = $conn->prepare("SELECT id, name, password FROM users WHERE email = ? AND shop_id = ?");
+    $stmt = $conn->prepare("SELECT id, name, password FROM users WHERE email = ? AND shop_id = ? AND is_active=1");
     $stmt->bind_param("si", $email, $shop_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $user   = $result->fetch_assoc();
 
-    if ($user && password_verify($password, $user['password'])) {
+    if ($user && !empty($user['password']) && password_verify($password, $user['password'])) {
+        caLogin($conn,(int)$user['id'],(int)$shop_id);
         $_SESSION['user_id']            = $user['id'];
         $_SESSION['user_name']          = $user['name'];
         $_SESSION['shop_id']            = $shop_id;

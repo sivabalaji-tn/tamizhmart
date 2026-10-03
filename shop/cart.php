@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/includes/customer_account.php';
+caValidateSession($conn);
 
 $slug = $_GET['shop'] ?? $_SESSION['current_shop_slug'] ?? null;
 if (!$slug) { header("Location: ../index.php"); exit; }

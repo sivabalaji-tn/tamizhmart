@@ -1,6 +1,8 @@
 <?php
 session_start();
-require '../config/db.php';
+require_once '../config/db.php';
+require_once __DIR__.'/../shop/includes/customer_account.php';
+caValidateSession($conn);
 require_once 'google_oauth_init.php';
 
 if (isset($_SESSION['user_id'])) {

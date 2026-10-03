@@ -12,7 +12,7 @@ Full reset removes shop operational records, branding and settings. It keeps the
 
 Uploaded-file removal is optional and runs after the database commit. It only removes direct filenames in known upload folders, skips symbolic links and external URLs, and retains files referenced elsewhere. File-system failures do not undo a completed database reset. External media and shared application logs are not deleted.
 
-The SQL file `databasefile/add_owner_debug_logs.sql` is installed on first page use. The reset refuses unknown shop-owned tables so future schema additions cannot silently escape cleanup. Do not disable foreign-key checks or truncate shared tables for shop resets.
+The page creates its debug history table on first use using embedded SQL; it does not require deploying `databasefile/add_owner_debug_logs.sql`. That migration remains available for manual installation if the hosting database account cannot create tables. An existing table is reused without running CREATE TABLE. The reset refuses unknown shop-owned tables so future schema additions cannot silently escape cleanup. Do not disable foreign-key checks or truncate shared tables for shop resets.
 
 The page's CSS and JavaScript are embedded in `owner/debugging.php`; no owner assets folder is needed. To remove the tools entirely, remove this page, `owner/includes/debug_tools.php`, the sidebar's testing link and debug-access include, and the two environment variables. Retain historical debug logs as needed.
 
